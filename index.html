@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Editor Presell 2026 — Max Boost</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  /* ============ DESIGN TOKENS ============ */
+  :root{
+    --ink:#0E1420;
+    --ink-soft:#46505F;
+    --slate:#7C8798;
+    --cloud:#F4F6FA;
+    --paper:#FFFFFF;
+    --edge:#E7EAF0;
+    --accent:#FF6A3D;       /* user-editable via color picker */
+    --accent-dark:#FFB100;  /* user-editable via color picker */
+    --success:#16A34A;
+    --danger:#E11D48;
+    --on-accent:#1A0F08;
+
+    --editor-bg:#0B0F17;
+    --editor-panel:#121826;
+    --editor-panel-2:#161D2C;
+    --editor-edge:#222B3D;
+    --editor-text:#E7ECF5;
+    --editor-muted:#8A93A6;
+
+    --r-sm:10px; --r-md:16px; --r-lg:22px; --r-full:999px;
+    --sh-sm:0 1px 2px rgba(15,23,42,.06);
+    --sh-md:0 10px 28px rgba(15,23,42,.08);
+    --sh-lg:0 24px 56px rgba(15,23,42,.14);
+    --ease:cubic-bezier(.16,1,.3,1);
+
+    --font-display:'Sora',system-ui,sans-serif;
+    --font-body:'Inter',system-ui,sans-serif;
+    --font-mono:'JetBrains Mono',monospace;
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:var(--font-body);
+    margin:0;
+    background:var(--cloud);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:var(--font-display);letter-spacing:-0.01em;margin:0}
+  ::selection{background:color-mix(in srgb, var(--accent) 30%, white)}
+
+  .eyebrow{
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    font-weight:500;
+  }
+
+  /* ============ APP SHELL ============ */
+  .app{display:grid;grid-template-columns:380px 1fr;min-height:100vh}
+
+  /* ============ EDITOR (DARK CONTROL PANEL) ============ */
+  .editor{
+    background:var(--editor-bg);
+    color:var(--editor-text);
+    border-right:1px solid var(--editor-edge);
+    display:flex;flex-direction:column;
+    position:sticky;top:0;height:100vh;
+  }
+  .editor-head{
+    padding:22px 20px 16px;
+    border-bottom:1px solid var(--editor-edge);
+    display:flex;align-items:center;gap:10px;
+  }
+  .editor-head .dot{width:9px;height:9px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-dark))}
+  .editor-head h1{font-size:16px;font-weight:700;color:#fff}
+  .editor-head span{display:block;color:var(--editor-muted);font-size:11.5px;margin-top:2px;font-family:var(--font-mono);letter-spacing:.06em}
+
+  .editor-scroll{flex:1;overflow-y:auto;padding:14px 16px 110px}
+  .editor-scroll::-webkit-scrollbar{width:8px}
+  .editor-scroll::-webkit-scrollbar-thumb{background:var(--editor-edge);border-radius:99px}
+
+  details.section{
+    background:var(--editor-panel);
+    border:1px solid var(--editor-edge);
+    border-radius:var(--r-md);
+    margin-bottom:10px;
+    overflow:hidden;
+  }
+  details.section[open]{background:var(--editor-panel-2)}
+  details.section > summary{
+    list-style:none;cursor:pointer;
+    padding:14px 16px;
+    display:flex;align-items:center;justify-content:space-between;
+    font-weight:600;font-size:13.5px;color:#fff;
+    user-select:none;
+  }
+  details.section > summary::-webkit-details-marker{display:none}
+  details.section > summary .ic{font-size:15px;margin-right:9px}
+  details.section > summary .chev{
+    color:var(--editor-muted);transition:transform .25s var(--ease);font-size:12px;
+  }
+  details.section[open] > summary .chev{transform:rotate(180deg)}
+  .section-body{padding:4px 16px 16px}
+
+  .field{margin-bottom:12px}
+  .field label{
+    display:block;font-size:11.5px;margin-bottom:6px;color:var(--editor-muted);
+    font-weight:500;letter-spacing:.01em;
+  }
+  .field .hint{font-size:11px;color:#5b6477;margin-top:5px;line-height:1.4}
+  .field input[type="text"], .field input[type="url"], .field input[type="datetime-local"],
+  .field textarea, .field select{
+    width:100%;padding:10px 12px;border-radius:var(--r-sm);
+    border:1px solid var(--editor-edge);font-size:13.5px;
+    background:#0E1422;color:var(--editor-text);font-family:var(--font-body);
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .field textarea{resize:vertical;line-height:1.5}
+  .field input:focus, .field textarea:focus, .field select:focus{
+    outline:none;border-color:var(--accent);
+    box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+  .field input[type="color"]{
+    width:100%;height:40px;border-radius:var(--r-sm);border:1px solid var(--editor-edge);
+    background:#0E1422;cursor:pointer;padding:4px;
+  }
+
+  .switch-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .switch-row label{font-size:11.5px;color:var(--editor-muted);font-weight:500}
+  .switch{position:relative;width:42px;height:24px;flex:none}
+  .switch input{opacity:0;width:0;height:0}
+  .switch .track{position:absolute;inset:0;background:#2A3447;border-radius:99px;transition:.2s;cursor:pointer}
+  .switch .track::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+  .switch input:checked + .track{background:linear-gradient(135deg,var(--accent),var(--accent-dark))}
+  .switch input:checked + .track::before{transform:translateX(18px)}
+
+  .small{font-size:12px;color:var(--editor-muted)}
+  .row{display:flex;gap:8px}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 14px;border-radius:var(--r-sm);text-decoration:none;border:none;cursor:pointer;font-weight:600;font-size:13px;transition:transform .15s,filter .15s;font-family:var(--font-body)}
+  .btn:hover{transform:translateY(-1px)}
+  .btn-save{background:#1C2740;color:#fff;border:1px solid var(--editor-edge)}
+  .btn-export{background:linear-gradient(135deg,var(--accent),var(--accent-dark));color:var(--on-accent)}
+  .btn-danger{background:transparent;color:#FF8484;border:1px solid #3A2330}
+  .btn-success{background:#16203A;color:#9FE6BD;border:1px solid #1F3A2C}
+  .btn-success:hover{background:#1A2A48}
+
+  .list{background:#0E1422;padding:8px;border-radius:var(--r-sm);border:1px solid var(--editor-edge);max-height:220px;overflow-y:auto}
+  .list-item{display:flex;gap:8px;align-items:center;padding:7px 4px;border-bottom:1px solid var(--editor-edge)}
+  .list-item:last-child{border-bottom:0}
+  .list-item input,.list-item textarea{color:var(--editor-text);font-family:var(--font-body);font-size:13px}
+  .icon-btn{background:#1C2740;border-radius:7px;padding:6px 9px;cursor:pointer;border:none;color:#FF8484;transition:background .15s}
+  .icon-btn:hover{background:#2A1A24}
+
+  .editor-footer{
+    position:sticky;bottom:0;padding:14px 16px;background:var(--editor-bg);
+    border-top:1px solid var(--editor-edge);display:flex;gap:8px;flex-wrap:wrap;
+  }
+
+  .status-message{position:fixed;bottom:20px;right:20px;padding:13px 18px;border-radius:var(--r-sm);color:white;font-weight:600;z-index:200;opacity:0;transform:translateY(10px);transition:all .3s var(--ease);font-size:13.5px;box-shadow:var(--sh-lg)}
+  .status-message.show{opacity:1;transform:translateY(0)}
+  .status-success{background:var(--success)}
+  .status-error{background:var(--danger)}
+
+  /* ============ PREVIEW (THE PRESELL PAGE) ============ */
+  .preview{overflow-x:hidden;background:var(--paper)}
+
+  .urgency-bar{
+    background:linear-gradient(90deg, var(--ink), #1c2433);
+    color:#fff;text-align:center;padding:10px 14px;font-size:13px;font-weight:600;
+    display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
+  }
+  .urgency-bar .countdown{font-family:var(--font-mono);background:rgba(255,255,255,.12);padding:3px 9px;border-radius:99px;font-size:12.5px;letter-spacing:.03em}
+
+  header.preview-header{
+    background:radial-gradient(120% 140% at 50% 0%, #16213A 0%, var(--ink) 60%);
+    color:#fff;text-align:center;padding:38px 20px 30px;position:relative;
+  }
+  header.preview-header h1{font-size:30px;font-weight:800}
+  header.preview-header p{margin:8px 0 0;font-size:14.5px;color:#B9C2D6;font-weight:500}
+
+  .hero{
+    position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:88vh;text-align:center;padding:50px 18px;box-sizing:border-box;
+    background-size:cover;background-position:center;
+  }
+  .hero::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(180deg, rgba(10,14,24,.15) 0%, rgba(10,14,24,.55) 100%);
+    z-index:0;
+  }
+  .hero > *{position:relative;z-index:1}
+  .hero-badge{
+    display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.94);
+    color:var(--ink);padding:8px 16px;border-radius:99px;font-size:12px;font-weight:700;
+    margin-bottom:18px;box-shadow:var(--sh-sm);
+  }
+  .video-container{width:100%;max-width:780px;aspect-ratio:16/9;margin-bottom:24px;border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--sh-lg)}
+  .video-container iframe{width:100%;height:100%;border:none;display:block}
+
+  .cta{
+    background:linear-gradient(95deg, var(--accent), var(--accent-dark));
+    color:var(--on-accent);font-weight:700;padding:19px 38px;border-radius:99px;
+    text-decoration:none;display:inline-block;box-shadow:0 14px 30px color-mix(in srgb, var(--accent) 35%, transparent);
+    transition:transform .2s var(--ease), box-shadow .2s var(--ease);font-size:18px;
+    text-align:center;line-height:1.35;width:auto;max-width:100%;
+  }
+  .cta:hover{transform:translateY(-3px) scale(1.01);box-shadow:0 18px 38px color-mix(in srgb, var(--accent) 45%, transparent)}
+  .cta small{display:block;font-size:12.5px;font-weight:600;opacity:.85;margin-bottom:3px;letter-spacing:.02em}
+  .cta strong{display:block;font-size:20px;font-weight:800;letter-spacing:.01em}
+
+  .trust-row{
+    display:flex;gap:22px;flex-wrap:wrap;justify-content:center;margin-top:24px;
+  }
+  .trust-item{display:flex;align-items:center;gap:7px;color:#fff;font-size:12.5px;font-weight:600;opacity:.95}
+  .trust-item .ic{font-size:16px}
+
+  .content{max-width:1080px;margin:0 auto;padding:64px 20px}
+  .content > section{margin-bottom:64px}
+  .content > section:last-child{margin-bottom:0}
+
+  .sec-head{text-align:center;max-width:640px;margin:0 auto 32px}
+  .sec-head h2{font-size:26px;font-weight:800;line-height:1.25}
+  .sec-head .eyebrow{color:var(--accent);display:block;margin-bottom:8px}
+
+  .intro-text{max-width:720px;margin:0 auto;text-align:center;font-size:16.5px;line-height:1.75;color:var(--ink-soft)}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+  .card{
+    background:var(--paper);padding:22px 20px;border-radius:var(--r-md);border:1px solid var(--edge);
+    box-shadow:var(--sh-sm);transition:transform .2s var(--ease), box-shadow .2s var(--ease);
+  }
+  .card:hover{transform:translateY(-4px);box-shadow:var(--sh-md)}
+  .card .ic{font-size:22px;display:block;margin-bottom:10px}
+  .card strong{display:block;margin-bottom:4px;font-family:var(--font-display);font-size:15px}
+  .card p{margin:0;font-size:13.5px;color:var(--ink-soft);line-height:1.55}
+
+  .product-image-section{text-align:center}
+  .product-image-container{position:relative;width:100%;max-width:520px;margin:0 auto}
+  .product-image{width:100%;height:auto;border-radius:var(--r-lg);box-shadow:var(--sh-lg);transition:transform .3s var(--ease)}
+  .product-image:hover{transform:scale(1.015)}
+  .product-image-container .badge{
+    position:absolute;top:-12px;right:-12px;background:linear-gradient(135deg,var(--accent),var(--accent-dark));
+    color:var(--on-accent);font-weight:700;font-size:12px;padding:9px 14px;border-radius:99px;box-shadow:var(--sh-md);
+    transform:rotate(6deg);
+  }
+
+  /* Verdict / pros-cons comparison panel */
+  .verdict-panel{
+    background:var(--paper);border:1px solid var(--edge);border-radius:var(--r-lg);
+    box-shadow:var(--sh-md);padding:36px 28px;position:relative;
+  }
+  .verdict-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  .verdict-col{padding:8px 22px}
+  .verdict-col + .verdict-col{border-left:1px solid var(--edge)}
+  .verdict-col h3{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:14px}
+  .verdict-col ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:9px}
+  .verdict-col li{
+    display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--ink-soft);line-height:1.45;
+  }
+  .chip{flex:none;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;margin-top:1px}
+  .chip.yes{background:color-mix(in srgb, var(--success) 16%, white);color:var(--success)}
+  .chip.no{background:color-mix(in srgb, var(--danger) 14%, white);color:var(--danger)}
+  .verdict-mid{
+    position:absolute;left:50%;top:-18px;transform:translateX(-50%);
+    background:var(--ink);color:#fff;font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;
+    padding:7px 16px;border-radius:99px;box-shadow:var(--sh-md);white-space:nowrap;
+  }
+
+  @media (max-width:680px){
+    .verdict-grid{grid-template-columns:1fr;gap:22px}
+    .verdict-col + .verdict-col{border-left:0;border-top:1px solid var(--edge);padding-top:18px}
+  }
+
+  /* Reviews */
+  .reviews-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px}
+  .review-card{
+    background:var(--paper);border-radius:var(--r-md);padding:22px;border:1px solid var(--edge);
+    box-shadow:var(--sh-sm);transition:transform .2s var(--ease);position:relative;
+  }
+  .review-card:hover{transform:translateY(-4px);box-shadow:var(--sh-md)}
+  .review-card .meta{display:flex;gap:12px;align-items:center}
+  .avatar{width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--cloud)}
+  .verified{font-size:10.5px;color:var(--success);font-weight:700;display:flex;align-items:center;gap:3px;margin-top:2px}
+  .review-card .quote{font-size:13.5px;color:var(--ink-soft);line-height:1.6;margin-top:14px}
+
+  /* FAQ */
+  .faq-item{border:1px solid var(--edge);border-radius:var(--r-md);margin-bottom:10px;overflow:hidden;background:var(--paper)}
+  .faq-item summary{
+    list-style:none;cursor:pointer;padding:17px 20px;font-weight:600;font-size:14.5px;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+  }
+  .faq-item summary::-webkit-details-marker{display:none}
+  .faq-item summary .plus{font-size:18px;color:var(--accent);transition:transform .2s var(--ease);flex:none}
+  .faq-item[open] summary .plus{transform:rotate(45deg)}
+  .faq-item .a{padding:0 20px 18px;font-size:14px;color:var(--ink-soft);line-height:1.65}
+
+  footer{background:var(--ink);color:#cdd4e3;padding:40px 24px 28px;text-align:center}
+  footer .fname{color:#fff;font-weight:700;font-family:var(--font-display)}
+  footer a{color:#cdd4e3;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.25)}
+  footer a:hover{color:#fff}
+  footer .legal{max-width:640px;margin:18px auto 0;font-size:11.5px;line-height:1.6;color:#7e8aa3}
+  footer .links{margin-top:6px}
+
+  /* sticky mobile CTA */
+  .sticky-cta{
+    position:fixed;left:0;right:0;bottom:0;z-index:80;
+    background:rgba(255,255,255,.94);backdrop-filter:blur(8px);
+    border-top:1px solid var(--edge);padding:10px 14px;
+    display:flex;align-items:center;gap:10px;
+    transform:translateY(120%);transition:transform .3s var(--ease);
+    box-shadow:0 -10px 30px rgba(2,6,23,.08);
+  }
+  .sticky-cta.show{transform:translateY(0)}
+  .sticky-cta .info{flex:1;min-width:0}
+  .sticky-cta .info strong{display:block;font-size:13px;font-family:var(--font-display)}
+  .sticky-cta .info span{font-size:11px;color:var(--slate)}
+  .sticky-cta .cta{padding:11px 18px;font-size:13.5px;flex:none}
+  .sticky-cta .cta strong{font-size:13.5px}
+  .sticky-cta .cta small{display:none}
+  @media (min-width:901px){.sticky-cta{display:none}}
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width:768px){
+    .cta{width:90%;padding:17px 22px;font-size:16px;margin:0 auto;display:block}
+    .hero-badge{font-size:11px}
+    header.preview-header h1{font-size:25px}
+    .content{padding:48px 16px}
+    .content > section{margin-bottom:48px}
+  }
+  @media (max-width:900px){
+    .app{grid-template-columns:1fr}
+    .editor{position:fixed;z-index:140;left:0;top:0;bottom:0;width:340px;height:100vh;
+      transform:translateX(-360px);transition:transform .25s var(--ease)}
+    .editor.open{transform:translateX(0);box-shadow:0 30px 60px rgba(2,6,23,.45)}
+    .toggle-editor{
+      position:fixed;right:16px;bottom:78px;z-index:150;padding:13px 16px;border-radius:99px;
+      background:var(--ink);color:#fff;border:none;font-weight:700;font-size:13px;
+      box-shadow:0 10px 24px rgba(2,6,23,.3);
+    }
+  }
+</style>
+</head>
+
+<body>
+<div class="app">
+
+  <!-- ================= EDITOR ================= -->
+  <aside class="editor" id="editor">
+    <div class="editor-head">
+      <div class="dot"></div>
+      <div>
+        <h1>Presell Studio</h1>
+        <span>BUILD · 2026 EDITION</span>
+      </div>
+    </div>
+
+    <div class="editor-scroll">
+
+      <details class="section" open>
+        <summary><span><span class="ic">🌐</span>Idioma &amp; Produto</span><span class="chev">▾</span></summary>
+        <div class="section-body">
+          <div class="field">
+            <label>Idioma da presell</label>
+            <select id="language">
+              <option value="en">English</option>
+              <option value="pt">Português</option>
+              <option value="es">Español</option>
+              <option value="fr">Français</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Nome do produto</label>
+            <input type="text" id="productName" value="Max Boost">
+          </div>
+          <div class="field">
+            <label>Subtítulo</label>
+            <input type="text" id="subtitle" value="Unlock Your Ultimate Vitality">
+          </div>
+          <div class="field">
+            <label>Link do botão de compra</label>
+            <input type="url" id="buyLink" placeholder="https://seusite.com/checkout" value="#buy">
+          </div>
+        </div>
+      </details>
+
+      <details class="section">
+        <summary><span><span class="ic">🎨</span>Cores do CTA</span><span class="chev">▾</span></summary>
+        <div class="section-body">
+          <div class="field"><label>Cor principal</label><input type="color" id="btnColor" value="#ff6a3d"></div>
+          <div class="field"><label>Cor secundária (gradiente)</label><input type="color" id="btnColorHover" value="#ffb100"></div>
+        </div>
+      </details>
+
+      <details class="section">
+        <summary><span><span class="ic">🖼️</span>Fundo do Hero</span><span class="chev">▾</span></summary>
+        <div class="section-body">
+          <div class="field">
+            <label>Tipo de fundo</label>
+            <select id="backgroundType">
+              <option value="image">Imagem</option>
+              <option value="video">Vídeo do YouTube</option>
+            </select>
+          </div>
+          <div class="field image-background">
+            <label>Imagem (desktop) — URL</label>
+            <input type="url" id="bgDesktop" value="https://images.unsplash.com/photo-1579546929662-711aa81148cf?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80">
+          </div>
+          <div class="field image-background">
+            <label>Imagem (mobile) — URL</label>
+            <input type="url" id="bgMobile" value="https://images.unsplash.com/photo-1579546929662-711aa81148cf?ixlib=rb-1.2.1&auto=format&fit=crop&w=750&q=80">
+          </div>
+          <div class="field video-background" style="display:none">
+            <label>ID do vídeo do YouTube</label>
+            <input type="text" id="youtubeVideoId" value="dQw4w9WgXcQ">
+          </div>
+        </div>
+      </details>
+
+      <details class="section">
+        <summary><span><span class="ic">⚡</span>Urgência &amp; Escassez</span><span class="chev">▾</span></summary>
+        <div class="section-body">
+          <div class="switch-row">
+            <label>Mostrar faixa de urgência</label>
+            <span class="switch"><input type="checkbox" id="urgencyEnabled" checked><span class="track" data-for="urgencyEnabled"></span></span>
+          </div>
+          <div class="field">
+            <label>Texto da faixa</label>
+            <input type="text" id="urgencyText" value="⚡ Limited Time Offer — Stock Running Low">
+          </div>
+          <div class="field">
+            <label>Contagem regressiva até (opcional)</label>
+            <input type="datetime-local" id="urgencyDeadline">
+            <div class="hint">Deixe vazio para exibir só o texto, sem cronômetro.</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="section">
+        <summary><span><span class="ic">🏷️</span>Selo de Confiança</span><span class="chev">▾</span></summary>
+        <div class="section-body">
+          <div class="hint" style="margin-bottom:10px">Os ícones de confiança (compra segura, garantia, envio, etc.) seguem o idioma escolhido automaticamente.</div>
+        </div>
+      </details>
+
+      <details class="section">
+        <summary><span><span class="ic">💥</span>Benefícios</span><span class="chev">▾</span></summary>
+        <div class="section-body">
+          <div id="benefitsList" class="list"></div>
+          <div class="row" style="margin-top:8px">
+            <input id="newBenefit" type="text" placeholder="Adicionar benefício..." style="flex:1">
+            <button class="btn btn-success" id="addBenefit">➕</button>
+          </div>
+        </div>
+      </details>
+
+      <details class="section">
+        <summary><span><span class="ic">📦</span>Imagem do Produto</span><span class="chev">▾</span></summary>
+        <div class="section-body">
+          <div class="field">
+            <label>URL da imagem do produto</label>
+            <input type="url" id="productImageUrl" placeholder="https://exemplo.com/produto.jpg" value="">
+          </div>
+        </div>
+      </details>
+
+      <details class="section">
+        <summary><span><span class="ic">⚖️</span>Pros &amp; Contras</span><span class="chev">▾</span></summary>
+        <div class="section-body">
+          <div class="field">
+            <label>Pros (um por linha)</label>
+            <textarea id="prosText" rows="4">Melhora a saúde da próstata
+Fácil de tomar
+Composto natural</textarea>
+          </div>
+          <div class="field">
+            <label>Cons (um por linha)</label>
+            <textarea id="consText" rows="3">Disponível apenas online
+Resultados variam por pessoa</textarea>
+          </div>
+        </div>
+      </details>
+
+      <details class="section">
+        <summary><span><span class="ic">🌱</span>Ingredientes</span><span class="chev">▾</span></summary>
+        <div class="section-body">
+          <div id="ingredientsList" class="list"></div>
+          <div class="row" style="margin-top:8px">
+            <input id="newIngredient" type="text" placeholder="Título: descrição..." style="flex:1">
+            <button class="btn btn-success" id="addIngredient">➕</button>
+          </div>
+        </div>
+      </details>
+
+      <details class="section">
+        <summary><span><span class="ic">⭐</span>Reviews</span><span class="chev">▾</span></summary>
+        <div class="section-body">
+          <div id="reviewsList" class="list"></div>
+          <div style="margin-top:8px">
+            <button class="btn btn-success" id="addReview" style="width:100%">Adicionar review</button>
+          </div>
+        </div>
+      </details>
+
+      <details class="section">
+        <summary><span><span class="ic">❓</span>FAQ</span><span class="chev">▾</span></summary>
+        <div class="section-body">
+          <div class="field">
+            <label>Perguntas e respostas</label>
+            <textarea id="faqText" rows="8">How fast will I see results? :: Most customers report noticeable changes within 2-4 weeks of consistent use.
+Is shipping discreet? :: Yes, every order ships in plain, unbranded packaging.
+What if it doesn't work for me? :: You're covered by our 30-day money-back guarantee, no questions asked.
+Is it safe to take daily? :: Yes, the formula is designed for daily use following the label instructions.</textarea>
+            <div class="hint">Um item por linha, no formato: Pergunta :: Resposta</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="section">
+        <summary><span><span class="ic">🔗</span>Rodapé &amp; Links</span><span class="chev">▾</span></summary>
+        <div class="section-body">
+          <div class="field"><label>Privacy Policy (URL)</label><input type="url" id="privacyUrl" value="privacy/privacy.html"></div>
+          <div class="field"><label>Terms (URL)</label><input type="url" id="termsUrl" value="terms.html"></div>
+          <div class="field"><label>Contact (URL)</label><input type="url" id="contactUrl" value="contact.html"></div>
+        </div>
+      </details>
+
+      <p class="hint" style="padding:4px 4px 0">💡 Use URLs de imagens públicas ou o ID de vídeo do YouTube. Tudo é salvo automaticamente no seu navegador.</p>
+    </div>
+
+    <div class="editor-footer">
+      <button class="btn btn-save" id="saveBtn">Salvar</button>
+      <button class="btn btn-export" id="exportBtn">Exportar HTML</button>
+      <button class="btn btn-danger" id="resetBtn">Resetar</button>
+    </div>
+  </aside>
+
+  <!-- ================= PREVIEW ================= -->
+  <main class="preview" id="previewArea">
+
+    <div class="urgency-bar" id="urgencyBar">
+      <span id="urgencyTextEl">⚡ Limited Time Offer — Stock Running Low</span>
+      <span class="countdown" id="countdownEl" style="display:none"></span>
+    </div>
+
+    <header class="preview-header">
+      <h1 id="previewTitle">Max Boost 💪</h1>
+      <p id="previewSubtitle">Unlock Your Ultimate Vitality</p>
+    </header>
+
+    <div class="hero" id="hero">
+      <span class="hero-badge" id="heroBadge">⭐ 4.9/5 · 2,000+ Verified Customers</span>
+      <div class="video-container" id="videoContainer"></div>
+      <a id="ctaBtn" class="cta" href="#buy">
+        <small id="ctaLine1">I WANT MY</small>
+        <strong id="ctaLine2">MAX BOOST NOW</strong>
+      </a>
+      <div class="trust-row" id="trustRow"></div>
+    </div>
+
+    <div class="content">
+
+      <section>
+        <div class="sec-head">
+          <span class="eyebrow" id="section1Eyebrow">THE FORMULA</span>
+          <h2 id="section1Title">🌿 Rediscover Your Natural Vitality</h2>
+        </div>
+        <p class="intro-text" id="section1Text"><span id="highlightName" style="font-weight:700;color:var(--accent)">Max Boost</span> is an all-natural formula designed to support her and enhance sexual drive.</p>
+      </section>
+
+      <section>
+        <div class="sec-head"><h2 id="benefitsTitle">💥 Exclusive Benefits</h2></div>
+        <div class="cards" id="benefitsCards"></div>
+      </section>
+
+      <section id="productImageSection" class="product-image-section" style="display:none">
+        <div class="product-image-container">
+          <span class="badge" id="productImageBadge">2026 FORMULA</span>
+          <img id="productImage" src="" alt="Imagem do Produto" class="product-image">
+        </div>
+      </section>
+
+      <section id="pros-e-contras">
+        <div class="sec-head"><h2 id="prosConsTitle">Pros and Cons</h2></div>
+        <div class="verdict-panel">
+          <span class="verdict-mid" id="verdictMid">VERDICT</span>
+          <div class="verdict-grid">
+            <div class="verdict-col">
+              <h3 id="prosTitle" style="color:var(--success)">✅ Pros</h3>
+              <ul id="prosList"></ul>
+            </div>
+            <div class="verdict-col">
+              <h3 id="consTitle" style="color:var(--danger)">❌ Cons</h3>
+              <ul id="consList"></ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="sec-head"><h2 id="ingredientsTitle">🌱 Selected Natural Ingredients</h2></div>
+        <div class="cards" id="ingredientsCards"></div>
+      </section>
+
+      <div style="text-align:center">
+        <a id="ctaBottom" class="cta" href="#buy">
+          <small id="ctaBottomLine1">I WANT MY</small>
+          <strong id="ctaBottomLine2">MAX BOOST NOW</strong>
+        </a>
+      </div>
+
+      <section class="testimonials">
+        <div class="sec-head"><h2 id="testimonialsTitle">What customers are saying</h2></div>
+        <div class="reviews-grid" id="reviewsGrid"></div>
+        <p style="font-size:12px;color:var(--slate);margin-top:14px;text-align:center" id="testimonialsNote">*Results may vary from person to person.</p>
+      </section>
+
+      <section id="faqSection">
+        <div class="sec-head"><h2 id="faqTitle">Frequently Asked Questions</h2></div>
+        <div id="faqList"></div>
+      </section>
+
+    </div>
+
+    <footer>
+      <p>© <span id="footerYear"></span> <span class="fname" id="footerProduct">Max Boost</span></p>
+      <p class="links">
+        <a id="privacyLink" href="privacy/privacy.html">Privacy Policy</a> ·
+        <a id="termsLink" href="terms.html">Terms</a> ·
+        <a id="contactLink" href="contact.html">Contact</a>
+      </p>
+      <p class="legal" id="disclaimerText">These statements have not been evaluated by the Food and Drug Administration. This product is not intended to diagnose, treat, cure, or prevent any disease. Individual results may vary.</p>
+    </footer>
+
+    <div class="sticky-cta" id="stickyCta">
+      <div class="info">
+        <strong id="stickyName">Max Boost</strong>
+        <span id="stickyTag">Limited time offer</span>
+      </div>
+      <a class="cta" id="stickyCtaBtn" href="#buy">
+        <small></small>
+        <strong id="stickyCtaText">GET IT NOW</strong>
+      </a>
+    </div>
+  </main>
+</div>
+
+<div id="statusMessage" class="status-message"></div>
+<button class="toggle-editor" id="toggleEditor" style="display:none">Editor</button>
+
+<script>
+/* ================= STATE & DEFAULTS ================= */
+const CONTENT_DEFAULTS = {
+  en: {
+    benefits: [
+      "✅ Promotes healthy blood flow",
+      "✅ Supports overall vitality",
+      "✅ Improves energy and sleep quality",
+      "✅ Enhances skin and inflammatory response",
+      "✅ 100% natural formula"
+    ],
+    pros: ["Supports prostate health", "Easy to take", "Natural ingredients"],
+    cons: ["Only available online", "Results vary by person"],
+    ingredients: [
+      "Powerful Natural Blend: Proprietary formula with natural ingredients",
+      "Blood Flow Support: Promotes healthy circulation",
+      "Vitality Boost: Enhances energy and overall well-being",
+      "Sleep Quality: Improves rest and recovery"
+    ],
+    faq: [
+      {q:"How fast will I see results?", a:"Most customers report noticeable changes within 2-4 weeks of consistent use."},
+      {q:"Is shipping discreet?", a:"Yes, every order ships in plain, unbranded packaging."},
+      {q:"What if it doesn't work for me?", a:"You're covered by our 30-day money-back guarantee, no questions asked."},
+      {q:"Is it safe to take daily?", a:"Yes, the formula is designed for daily use following the label instructions."}
+    ]
+  },
+  pt: {
+    benefits: [
+      "✅ Promove fluxo sanguíneo saudável",
+      "✅ Apoia a vitalidade geral",
+      "✅ Melhora energia e qualidade do sono",
+      "✅ Favorece a pele e a resposta inflamatória",
+      "✅ Fórmula 100% natural"
+    ],
+    pros: ["Melhora a saúde da próstata", "Fácil de tomar", "Composto natural"],
+    cons: ["Disponível apenas online", "Resultados variam por pessoa"],
+    ingredients: [
+      "Blend Natural Poderoso: Fórmula proprietária com ingredientes naturais",
+      "Suporte à Circulação: Promove fluxo sanguíneo saudável",
+      "Impulso de Vitalidade: Melhora energia e bem-estar geral",
+      "Qualidade do Sono: Melhora o descanso e a recuperação"
+    ],
+    faq: [
+      {q:"Em quanto tempo vejo resultados?", a:"A maioria dos clientes relata mudanças perceptíveis em 2 a 4 semanas de uso contínuo."},
+      {q:"O envio é discreto?", a:"Sim, todo pedido é enviado em embalagem neutra, sem identificação."},
+      {q:"E se não funcionar para mim?", a:"Você está protegido pela nossa garantia de 30 dias, sem perguntas."},
+      {q:"É seguro tomar todos os dias?", a:"Sim, a fórmula foi desenvolvida para uso diário, seguindo as instruções do rótulo."}
+    ]
+  },
+  es: {
+    benefits: [
+      "✅ Favorece el flujo sanguíneo saludable",
+      "✅ Apoya la vitalidad general",
+      "✅ Mejora la energía y la calidad del sueño",
+      "✅ Favorece la piel y la respuesta inflamatoria",
+      "✅ Fórmula 100% natural"
+    ],
+    pros: ["Mejora la salud de la próstata", "Fácil de tomar", "Compuesto natural"],
+    cons: ["Disponible solo en línea", "Los resultados varían según la persona"],
+    ingredients: [
+      "Mezcla Natural Poderosa: Fórmula patentada con ingredientes naturales",
+      "Apoyo a la Circulación: Favorece el flujo sanguíneo saludable",
+      "Impulso de Vitalidad: Mejora la energía y el bienestar general",
+      "Calidad del Sueño: Mejora el descanso y la recuperación"
+    ],
+    faq: [
+      {q:"¿Qué tan rápido veré resultados?", a:"La mayoría de los clientes notan cambios en 2 a 4 semanas de uso constante."},
+      {q:"¿El envío es discreto?", a:"Sí, cada pedido se envía en empaque neutro, sin marca visible."},
+      {q:"¿Y si no funciona para mí?", a:"Estás protegido por nuestra garantía de devolución de 30 días, sin preguntas."},
+      {q:"¿Es seguro tomarlo todos los días?", a:"Sí, la fórmula está diseñada para uso diario siguiendo las instrucciones de la etiqueta."}
+    ]
+  },
+  fr: {
+    benefits: [
+      "✅ Favorise une circulation sanguine saine",
+      "✅ Soutient la vitalité globale",
+      "✅ Améliore l'énergie et la qualité du sommeil",
+      "✅ Favorise la peau et la réponse inflammatoire",
+      "✅ Formule 100% naturelle"
+    ],
+    pros: ["Favorise la santé de la prostate", "Facile à prendre", "Composé naturel"],
+    cons: ["Disponible uniquement en ligne", "Les résultats varient selon la personne"],
+    ingredients: [
+      "Mélange Naturel Puissant: Formule brevetée à base d'ingrédients naturels",
+      "Soutien de la Circulation: Favorise une circulation sanguine saine",
+      "Boost de Vitalité: Améliore l'énergie et le bien-être général",
+      "Qualité du Sommeil: Améliore le repos et la récupération"
+    ],
+    faq: [
+      {q:"À quelle vitesse verrai-je des résultats?", a:"La plupart des clients constatent des changements notables après 2 à 4 semaines d'utilisation régulière."},
+      {q:"La livraison est-elle discrète?", a:"Oui, chaque commande est expédiée dans un emballage neutre, sans marque."},
+      {q:"Et si cela ne fonctionne pas pour moi?", a:"Vous êtes couvert par notre garantie de remboursement de 30 jours, sans questions."},
+      {q:"Est-il sûr de le prendre tous les jours?", a:"Oui, la formule est conçue pour un usage quotidien selon les instructions de l'étiquette."}
+    ]
+  }
+};
+
+const DEFAULT = {
+  productName: "Max Boost",
+  subtitle: "Unlock Your Ultimate Vitality",
+  buyLink: "#buy",
+  backgroundType: "image",
+  bgDesktop: "https://images.unsplash.com/photo-1579546929662-711aa81148cf?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80",
+  bgMobile: "https://images.unsplash.com/photo-1579546929662-711aa81148cf?ixlib=rb-1.2.1&auto=format&fit=crop&w=750&q=80",
+  youtubeVideoId: "dQw4w9WgXcQ",
+  benefits: [
+    "✅ Promotes healthy blood flow",
+    "✅ Supports overall vitality",
+    "✅ Improves energy and sleep quality",
+    "✅ Enhances skin and inflammatory response",
+    "✅ 100% natural formula"
+  ],
+  pros: ["Melhora a saúde da próstata", "Fácil de tomar", "Composto natural"],
+  cons: ["Disponível apenas online", "Resultados variam por pessoa"],
+  ingredients: [
+    "Powerful Natural Blend: Proprietary formula with natural ingredients",
+    "Blood Flow Support: Promotes healthy circulation",
+    "Vitality Boost: Enhances energy and overall well-being",
+    "Sleep Quality: Improves rest and recovery"
+  ],
+  reviews: [
+    {name:"Robert M.", text:"I was feeling tired all the time... After using Max Boost for a month, my energy levels are through the roof!", rating:5, date:"2025-06-18", avatar:"https://i.pravatar.cc/150?img=12"},
+    {name:"William R.", text:"I've been using Max Boost for a few weeks now, and I'm honestly amazed at how much it has improved my vitality and energy.", rating:5, date:"2025-07-02", avatar:"https://i.pravatar.cc/150?img=15"},
+    {name:"David P.", text:"My life had changed. My energy returned. I felt younger and more vibrant than ever.", rating:5, date:"2025-05-27", avatar:"https://i.pravatar.cc/150?img=5"}
+  ],
+  faq: [
+    {q:"How fast will I see results?", a:"Most customers report noticeable changes within 2-4 weeks of consistent use."},
+    {q:"Is shipping discreet?", a:"Yes, every order ships in plain, unbranded packaging."},
+    {q:"What if it doesn't work for me?", a:"You're covered by our 30-day money-back guarantee, no questions asked."},
+    {q:"Is it safe to take daily?", a:"Yes, the formula is designed for daily use following the label instructions."}
+  ],
+  privacyUrl: "privacy/privacy.html",
+  termsUrl: "terms.html",
+  contactUrl: "contact.html",
+  btnColor: "#ff6a3d",
+  btnColorHover: "#ffb100",
+  productImageUrl: "",
+  language: "en",
+  urgencyEnabled: true,
+  urgencyText: "⚡ Limited Time Offer — Stock Running Low",
+  urgencyDeadline: ""
+};
+
+const TRANSLATIONS = {
+  en: {
+    ctaLine1:"I WANT MY", ctaLine2:"{P} NOW",
+    section1Eyebrow:"THE FORMULA",
+    section1Title:"🌿 Rediscover Your Natural Vitality",
+    section1Text:"is an all-natural formula designed to support her and enhance sexual drive. Made in the USA from a proprietary powerful natural ingredients, it promotes healthy blood flow supports overall vitality, improves energy, sleep quality, skin and inflammatory response.",
+    benefitsTitle:"💥 Exclusive Benefits",
+    prosConsTitle:"Pros and Cons", prosTitle:"✅ Pros", consTitle:"❌ Cons", verdictMid:"VERDICT",
+    ingredientsTitle:"🌱 Selected Natural Ingredients",
+    testimonialsTitle:"What customers are saying",
+    testimonialsNote:"*Results may vary from person to person.",
+    faqTitle:"Frequently Asked Questions",
+    privacyText:"Privacy Policy", termsText:"Terms", contactText:"Contact",
+    heroBadge:"⭐ 4.9/5 · 2,000+ Verified Customers",
+    trust1:"Secure Checkout", trust2:"Fast Shipping", trust3:"30-Day Guarantee", trust4:"Made in USA",
+    stickyTag:"Limited time offer", stickyCtaText:"GET IT NOW",
+    productImageBadge:"2026 FORMULA", verified:"Verified Buyer",
+    disclaimer:"These statements have not been evaluated by the Food and Drug Administration. This product is not intended to diagnose, treat, cure, or prevent any disease. Individual results may vary."
+  },
+  pt: {
+    ctaLine1:"EU QUERO MEU", ctaLine2:"{P} AGORA",
+    section1Eyebrow:"A FÓRMULA",
+    section1Title:"🌿 Redescubra Sua Vitalidade Natural",
+    section1Text:"é uma fórmula totalmente natural projetada para apoiar e melhorar o desejo sexual. Feito nos EUA com ingredientes naturais poderosos proprietários, promove fluxo sanguíneo saudável, apoia a vitalidade geral, melhora energia, qualidade do sono, pele e resposta inflamatória.",
+    benefitsTitle:"💥 Benefícios Exclusivos",
+    prosConsTitle:"Prós e Contras", prosTitle:"✅ Prós", consTitle:"❌ Contras", verdictMid:"VEREDITO",
+    ingredientsTitle:"🌱 Ingredientes Naturais Selecionados",
+    testimonialsTitle:"O que os clientes estão dizendo",
+    testimonialsNote:"*Resultados podem variar de pessoa para pessoa.",
+    faqTitle:"Perguntas Frequentes",
+    privacyText:"Política de Privacidade", termsText:"Termos de Uso", contactText:"Contato",
+    heroBadge:"⭐ 4.9/5 · +2.000 Clientes Verificados",
+    trust1:"Compra Segura", trust2:"Envio Rápido", trust3:"Garantia de 30 Dias", trust4:"Feito nos EUA",
+    stickyTag:"Oferta por tempo limitado", stickyCtaText:"QUERO AGORA",
+    productImageBadge:"FÓRMULA 2026", verified:"Compra Verificada",
+    disclaimer:"Estas declarações não foram avaliadas pela ANVISA ou pela FDA. Este produto não tem a intenção de diagnosticar, tratar, curar ou prevenir qualquer doença. Resultados individuais podem variar."
+  },
+  es: {
+    ctaLine1:"YO QUIERO MI", ctaLine2:"{P} AHORA",
+    section1Eyebrow:"LA FÓRMULA",
+    section1Title:"🌿 Redescubre Tu Vitalidad Natural",
+    section1Text:"es una fórmula totalmente natural diseñada para apoyar y mejorar el deseo sexual. Hecho en EE. UU. con ingredientes naturales poderosos patentados, promueve un flujo sanguíneo saludable, apoya la vitalidad general, mejora la energía, la calidad del sueño, la piel y la respuesta inflamatoria.",
+    benefitsTitle:"💥 Beneficios Exclusivos",
+    prosConsTitle:"Pros y Contras", prosTitle:"✅ Pros", consTitle:"❌ Contras", verdictMid:"VEREDICTO",
+    ingredientsTitle:"🌱 Ingredientes Naturales Seleccionados",
+    testimonialsTitle:"Lo que dicen los clientes",
+    testimonialsNote:"*Los resultados pueden variar de persona a persona.",
+    faqTitle:"Preguntas Frecuentes",
+    privacyText:"Política de Privacidad", termsText:"Términos y Condiciones", contactText:"Contacto",
+    heroBadge:"⭐ 4.9/5 · +2.000 Clientes Verificados",
+    trust1:"Pago Seguro", trust2:"Envío Rápido", trust3:"Garantía de 30 Días", trust4:"Hecho en EE. UU.",
+    stickyTag:"Oferta por tiempo limitado", stickyCtaText:"QUIERO AHORA",
+    productImageBadge:"FÓRMULA 2026", verified:"Compra Verificada",
+    disclaimer:"Estas declaraciones no han sido evaluadas por la FDA. Este producto no pretende diagnosticar, tratar, curar ni prevenir ninguna enfermedad. Los resultados individuales pueden variar."
+  },
+  fr: {
+    ctaLine1:"JE VEUX MON", ctaLine2:"{P} MAINTENANT",
+    section1Eyebrow:"LA FORMULE",
+    section1Title:"🌿 Redécouvrez Votre Vitalité Naturelle",
+    section1Text:"est une formule entièrement naturelle conçue pour soutenir et améliorer le désir sexuel. Fabriqué aux États-Unis à partir d'ingrédients naturels puissants brevetés, il favorise une circulation sanguine saine, soutient la vitalité globale, améliore l'énergie, la qualité du sommeil, la peau et la réponse inflammatoire.",
+    benefitsTitle:"💥 Avantages Exclusifs",
+    prosConsTitle:"Avantages et Inconvénients", prosTitle:"✅ Avantages", consTitle:"❌ Inconvénients", verdictMid:"VERDICT",
+    ingredientsTitle:"🌱 Ingrédients Naturels Sélectionnés",
+    testimonialsTitle:"Ce que disent les clients",
+    testimonialsNote:"*Les résultats peuvent varier d'une personne à l'autre.",
+    faqTitle:"Questions Fréquentes",
+    privacyText:"Politique de Confidentialité", termsText:"Conditions d'Utilisation", contactText:"Contact",
+    heroBadge:"⭐ 4.9/5 · +2 000 Clients Vérifiés",
+    trust1:"Paiement Sécurisé", trust2:"Livraison Rapide", trust3:"Garantie 30 Jours", trust4:"Fabriqué aux É.-U.",
+    stickyTag:"Offre à durée limitée", stickyCtaText:"J'EN VEUX",
+    productImageBadge:"FORMULE 2026", verified:"Achat Vérifié",
+    disclaimer:"Ces déclarations n'ont pas été évaluées par la FDA. Ce produit n'est pas destiné à diagnostiquer, traiter, guérir ou prévenir une maladie. Les résultats individuels peuvent varier."
+  }
+};
+
+const STORAGE_KEY = "presell_editor_state_v2";
+function loadState(){ try{
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(!raw) return {...DEFAULT};
+  return {...DEFAULT, ...JSON.parse(raw)};
+} catch(e){ console.warn(e); return {...DEFAULT}; } }
+function saveState(state){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+let state = loadState();
+let countdownInterval = null;
+
+/* ================= DOM refs ================= */
+const $ = id => document.getElementById(id);
+const productNameInput=$("productName"), subtitleInput=$("subtitle"), buyLinkInput=$("buyLink");
+const backgroundTypeInput=$("backgroundType"), bgDesktopInput=$("bgDesktop"), bgMobileInput=$("bgMobile"), youtubeVideoIdInput=$("youtubeVideoId");
+const prosTextInput=$("prosText"), consTextInput=$("consText"), faqTextInput=$("faqText");
+const benefitsList=$("benefitsList"), ingredientsList=$("ingredientsList"), reviewsList=$("reviewsList");
+const benefitsCards=$("benefitsCards"), ingredientsCards=$("ingredientsCards"), reviewsGrid=$("reviewsGrid"), faqListEl=$("faqList");
+const prosList=$("prosList"), consList=$("consList");
+const previewTitle=$("previewTitle"), previewSubtitle=$("previewSubtitle"), highlightName=$("highlightName");
+const ctaBtn=$("ctaBtn"), ctaBottom=$("ctaBottom"), hero=$("hero"), videoContainer=$("videoContainer");
+const footerYear=$("footerYear"), footerProduct=$("footerProduct");
+const privacyLink=$("privacyLink"), termsLink=$("termsLink"), contactLink=$("contactLink");
+const addBenefitBtn=$("addBenefit"), newBenefitInput=$("newBenefit");
+const addIngredientBtn=$("addIngredient"), newIngredientInput=$("newIngredient");
+const addReviewBtn=$("addReview");
+const saveBtn=$("saveBtn"), exportBtn=$("exportBtn"), resetBtn=$("resetBtn");
+const privacyUrlInput=$("privacyUrl"), termsUrlInput=$("termsUrl"), contactUrlInput=$("contactUrl");
+const statusMessage=$("statusMessage");
+const btnColorInput=$("btnColor"), btnColorHoverInput=$("btnColorHover");
+const productImageUrlInput=$("productImageUrl"), productImageSection=$("productImageSection"), productImage=$("productImage");
+const languageInput=$("language");
+const urgencyEnabledInput=$("urgencyEnabled"), urgencyTextInput=$("urgencyText"), urgencyDeadlineInput=$("urgencyDeadline");
+const urgencyBar=$("urgencyBar"), urgencyTextEl=$("urgencyTextEl"), countdownEl=$("countdownEl");
+const stickyCta=$("stickyCta"), stickyCtaBtn=$("stickyCtaBtn");
+
+function toggleBackgroundFields(){
+  const bt = backgroundTypeInput.value;
+  document.querySelectorAll('.image-background').forEach(f=> f.style.display = bt==='image' ? 'block':'none');
+  document.querySelectorAll('.video-background').forEach(f=> f.style.display = bt==='video' ? 'block':'none');
+}
+
+function showStatus(message, isSuccess = true){
+  statusMessage.textContent = message;
+  statusMessage.className = `status-message ${isSuccess ? 'status-success' : 'status-error'} show`;
+  setTimeout(()=> statusMessage.classList.remove('show'), 3000);
+}
+
+function escapeHtml(text){
+  if(text==null) return "";
+  return String(text).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function escapeAttr(t){ return escapeHtml(t); }
+function renderStars(n){
+  let s=""; for(let i=0;i<n;i++) s+="★"; for(let i=n;i<5;i++) s+="☆";
+  return `<span style="color:#ffb100;font-size:15px;letter-spacing:1px">${s}</span>`;
+}
+function t(){ return TRANSLATIONS[state.language] || TRANSLATIONS.en; }
+
+/* ================= populate editor ================= */
+function populateEditorFromState(){
+  productNameInput.value = state.productName || DEFAULT.productName;
+  subtitleInput.value = state.subtitle || DEFAULT.subtitle;
+  buyLinkInput.value = state.buyLink || DEFAULT.buyLink;
+  backgroundTypeInput.value = state.backgroundType || DEFAULT.backgroundType;
+  bgDesktopInput.value = state.bgDesktop || DEFAULT.bgDesktop;
+  bgMobileInput.value = state.bgMobile || DEFAULT.bgMobile;
+  youtubeVideoIdInput.value = state.youtubeVideoId || DEFAULT.youtubeVideoId;
+  prosTextInput.value = (state.pros || DEFAULT.pros).join('\n');
+  consTextInput.value = (state.cons || DEFAULT.cons).join('\n');
+  faqTextInput.value = (state.faq || DEFAULT.faq).map(f=>`${f.q} :: ${f.a}`).join('\n');
+  privacyUrlInput.value = state.privacyUrl || DEFAULT.privacyUrl;
+  termsUrlInput.value = state.termsUrl || DEFAULT.termsUrl;
+  contactUrlInput.value = state.contactUrl || DEFAULT.contactUrl;
+  productImageUrlInput.value = state.productImageUrl || DEFAULT.productImageUrl;
+  languageInput.value = state.language || DEFAULT.language;
+  if(state.btnColor) btnColorInput.value = state.btnColor;
+  if(state.btnColorHover) btnColorHoverInput.value = state.btnColorHover;
+  urgencyEnabledInput.checked = state.urgencyEnabled !== false;
+  urgencyTextInput.value = state.urgencyText || DEFAULT.urgencyText;
+  urgencyDeadlineInput.value = state.urgencyDeadline || "";
+  toggleBackgroundFields();
+}
+
+/* ================= render: benefits ================= */
+function renderBenefits(){
+  benefitsList.innerHTML = "";
+  benefitsCards.innerHTML = "";
+  state.benefits.forEach((b,i)=>{
+    const li = document.createElement("div");
+    li.className = "list-item";
+    li.innerHTML = `<input type="text" data-index="${i}" class="benefit-input" style="flex:1;border:0;background:transparent" value="${escapeHtml(b)}"><button class="icon-btn" data-action="del-benefit" data-index="${i}">✖</button>`;
+    benefitsList.appendChild(li);
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `<span class="ic">✦</span>${escapeHtml(b)}`;
+    benefitsCards.appendChild(card);
+  });
+  document.querySelectorAll(".benefit-input").forEach(inp=> inp.addEventListener("input", e=>{ state.benefits[+e.target.dataset.index]=e.target.value; renderBenefits(); saveState(state); }));
+  document.querySelectorAll("[data-action='del-benefit']").forEach(btn=> btn.addEventListener("click", e=>{ state.benefits.splice(+e.target.dataset.index,1); renderBenefits(); saveState(state); }));
+}
+
+function renderProductImage(){
+  const url = state.productImageUrl;
+  if(url && url.trim()!==''){
+    productImage.src = url;
+    productImageSection.style.display = 'block';
+    productImage.onerror = function(){ productImageSection.style.display='none'; };
+  } else {
+    productImageSection.style.display = 'none';
+  }
+}
+
+function renderProsCons(){
+  prosList.innerHTML = ""; consList.innerHTML = "";
+  state.pros.forEach((pro,i)=>{
+    const li = document.createElement("li");
+    li.innerHTML = `<span class="chip yes">✓</span><span>${escapeHtml(pro)}</span>`;
+    prosList.appendChild(li);
+  });
+  state.cons.forEach((con,i)=>{
+    const li = document.createElement("li");
+    li.innerHTML = `<span class="chip no">✕</span><span>${escapeHtml(con)}</span>`;
+    consList.appendChild(li);
+  });
+}
+
+function renderIngredients(){
+  ingredientsList.innerHTML = ""; ingredientsCards.innerHTML = "";
+  state.ingredients.forEach((ing,i)=>{
+    const li = document.createElement("div");
+    li.className = "list-item";
+    li.innerHTML = `<input type="text" data-index="${i}" class="ingredient-input" style="flex:1;border:0;background:transparent" value="${escapeHtml(ing)}"><button class="icon-btn" data-action="del-ing" data-index="${i}">✖</button>`;
+    ingredientsList.appendChild(li);
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `<span class="ic">🌱</span><strong>${escapeHtml(ing.split(':')[0]||ing)}</strong><p>${escapeHtml(ing.split(':').slice(1).join(':')||'')}</p>`;
+    ingredientsCards.appendChild(card);
+  });
+  document.querySelectorAll(".ingredient-input").forEach(inp=> inp.addEventListener("input", e=>{ state.ingredients[+e.target.dataset.index]=e.target.value; renderIngredients(); saveState(state); }));
+  document.querySelectorAll("[data-action='del-ing']").forEach(btn=> btn.addEventListener("click", e=>{ state.ingredients.splice(+e.target.dataset.index,1); renderIngredients(); saveState(state); }));
+}
+
+function renderReviews(){
+  reviewsList.innerHTML = ""; reviewsGrid.innerHTML = "";
+  const tr = t();
+  state.reviews.forEach((r,i)=>{
+    const li = document.createElement("div");
+    li.className = "list-item"; li.style.flexDirection = "column";
+    li.innerHTML = `
+      <div style="display:flex;gap:8px;width:100%;">
+        <input type="text" data-index="${i}" class="rev-name" value="${escapeHtml(r.name)}" style="flex:1;border:0;background:transparent">
+        <select data-index="${i}" class="rev-rating">
+          ${[5,4,3,2,1].map(n=>`<option ${r.rating==n?'selected':''} value="${n}">${n}★</option>`).join('')}
+        </select>
+        <button class="icon-btn" data-action="del-review" data-index="${i}">✖</button>
+      </div>
+      <textarea data-index="${i}" class="rev-text" style="width:100%;border:0;background:transparent;margin-top:8px" rows="3">${escapeHtml(r.text)}</textarea>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input type="url" data-index="${i}" class="rev-avatar" placeholder="avatar URL" value="${escapeHtml(r.avatar||'')}" style="flex:1;border:0;background:transparent">
+        <input type="date" data-index="${i}" class="rev-date" value="${r.date||''}">
+      </div>`;
+    reviewsList.appendChild(li);
+
+    const rc = document.createElement("article");
+    rc.className = "review-card";
+    rc.innerHTML = `
+      <div class="meta">
+        <img src="${escapeAttr(r.avatar||'https://i.pravatar.cc/150?img=1')}" class="avatar" onerror="this.src='https://i.pravatar.cc/150?img=1'">
+        <div>
+          <div style="font-weight:700;font-size:14px">${escapeHtml(r.name)}</div>
+          <div class="verified">✔ ${tr.verified}</div>
+        </div>
+      </div>
+      <div style="margin-top:12px">${renderStars(r.rating)}<div class="quote">"${escapeHtml(r.text)}"</div></div>`;
+    reviewsGrid.appendChild(rc);
+  });
+
+  document.querySelectorAll(".rev-name").forEach(inp=> inp.addEventListener("input", e=>{ state.reviews[+e.target.dataset.index].name=e.target.value; renderReviews(); }));
+  document.querySelectorAll(".rev-text").forEach(inp=> inp.addEventListener("input", e=>{ state.reviews[+e.target.dataset.index].text=e.target.value; renderReviews(); }));
+  document.querySelectorAll(".rev-avatar").forEach(inp=> inp.addEventListener("input", e=>{ state.reviews[+e.target.dataset.index].avatar=e.target.value; renderReviews(); }));
+  document.querySelectorAll(".rev-rating").forEach(sel=> sel.addEventListener("change", e=>{ state.reviews[+e.target.dataset.index].rating=+e.target.value; renderReviews(); }));
+  document.querySelectorAll(".rev-date").forEach(d=> d.addEventListener("change", e=>{ state.reviews[+e.target.dataset.index].date=e.target.value; renderReviews(); }));
+  document.querySelectorAll("[data-action='del-review']").forEach(btn=> btn.addEventListener("click", e=>{ state.reviews.splice(+e.target.dataset.index,1); renderReviews(); saveState(state); }));
+}
+
+function renderFaq(){
+  faqListEl.innerHTML = "";
+  (state.faq||[]).forEach((item)=>{
+    const d = document.createElement("details");
+    d.className = "faq-item";
+    d.innerHTML = `<summary>${escapeHtml(item.q)}<span class="plus">+</span></summary><div class="a">${escapeHtml(item.a)}</div>`;
+    faqListEl.appendChild(d);
+  });
+}
+
+function parseFaqText(raw){
+  return raw.split('\n').map(l=>l.trim()).filter(Boolean).map(line=>{
+    const [q,...rest] = line.split('::');
+    return { q: (q||'').trim(), a: rest.join('::').trim() };
+  });
+}
+
+function renderTrustRow(){
+  const tr = t();
+  const trustRow = $("trustRow");
+  trustRow.innerHTML = [
+    ['🔒',tr.trust1], ['🚚',tr.trust2], ['🛡️',tr.trust3], ['🏅',tr.trust4]
+  ].map(([ic,label])=>`<span class="trust-item"><span class="ic">${ic}</span>${escapeHtml(label)}</span>`).join('');
+}
+
+function formatCtaLine2(template){
+  return template.replace('{P}', state.productName.toUpperCase());
+}
+
+function updateHeroBackground(){
+  const bt = state.backgroundType || DEFAULT.backgroundType;
+  if(bt === 'video'){
+    const videoId = state.youtubeVideoId || DEFAULT.youtubeVideoId;
+    videoContainer.innerHTML = '';
+    if(videoId){
+      const iframe = document.createElement('iframe');
+      iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=1&showinfo=0&rel=0&modestbranding=1&disablekb=1&playsinline=1`;
+      iframe.allow = 'autoplay; encrypted-media';
+      iframe.allowFullscreen = true; iframe.frameBorder = '0';
+      videoContainer.appendChild(iframe);
+    }
+    hero.style.backgroundImage = 'none';
+  } else {
+    const desktopUrl = state.bgDesktop || DEFAULT.bgDesktop;
+    const mobileUrl = state.bgMobile || DEFAULT.bgMobile;
+    hero.style.backgroundImage = `url('${desktopUrl}')`;
+    videoContainer.innerHTML = '';
+    let mobileStyle = document.getElementById('mobileBackgroundStyle');
+    if(!mobileStyle){ mobileStyle = document.createElement('style'); mobileStyle.id='mobileBackgroundStyle'; document.head.appendChild(mobileStyle); }
+    mobileStyle.textContent = `@media (max-width:768px){ .hero{ background-image:url('${mobileUrl}') !important; } }`;
+  }
+}
+
+function applyCtaColors(){
+  if(state.btnColor) document.documentElement.style.setProperty('--accent', state.btnColor);
+  if(state.btnColorHover) document.documentElement.style.setProperty('--accent-dark', state.btnColorHover);
+}
+
+function pad(n){ return String(n).padStart(2,'0'); }
+function startCountdown(){
+  if(countdownInterval) clearInterval(countdownInterval);
+  if(!state.urgencyDeadline){ countdownEl.style.display='none'; return; }
+  const deadline = new Date(state.urgencyDeadline).getTime();
+  function tick(){
+    const diff = deadline - Date.now();
+    if(diff <= 0){ countdownEl.textContent = "00:00:00"; clearInterval(countdownInterval); return; }
+    const h = Math.floor(diff/3600000), m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
+    countdownEl.textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
+  }
+  countdownEl.style.display = 'inline-block';
+  tick();
+  countdownInterval = setInterval(tick, 1000);
+}
+
+function renderUrgency(){
+  const enabled = state.urgencyEnabled !== false;
+  urgencyBar.style.display = enabled ? 'flex' : 'none';
+  urgencyTextEl.textContent = state.urgencyText || DEFAULT.urgencyText;
+  startCountdown();
+}
+
+function setupStickyScroll(){
+  window.addEventListener('scroll', ()=>{
+    const heroBottom = hero.getBoundingClientRect().bottom;
+    if(heroBottom < 0) stickyCta.classList.add('show'); else stickyCta.classList.remove('show');
+  });
+}
+
+function renderAll(){
+  const tr = t();
+  previewTitle.textContent = state.productName;
+  previewSubtitle.textContent = state.subtitle;
+  highlightName.textContent = state.productName;
+  ctaBtn.href = state.buyLink;
+  ctaBottom.href = state.buyLink;
+  stickyCtaBtn.href = state.buyLink;
+
+  $("ctaLine1").textContent = tr.ctaLine1;
+  $("ctaLine2").textContent = formatCtaLine2(tr.ctaLine2);
+  $("ctaBottomLine1").textContent = tr.ctaLine1;
+  $("ctaBottomLine2").textContent = formatCtaLine2(tr.ctaLine2);
+  $("section1Eyebrow").textContent = tr.section1Eyebrow;
+  $("section1Title").textContent = tr.section1Title;
+  $("section1Text").innerHTML = `<span id="highlightName" style="font-weight:700;color:var(--accent)">${escapeHtml(state.productName)}</span> ${tr.section1Text}`;
+  $("benefitsTitle").textContent = tr.benefitsTitle;
+  $("prosConsTitle").textContent = tr.prosConsTitle;
+  $("prosTitle").innerHTML = tr.prosTitle;
+  $("consTitle").innerHTML = tr.consTitle;
+  $("verdictMid").textContent = tr.verdictMid;
+  $("ingredientsTitle").textContent = tr.ingredientsTitle;
+  $("testimonialsTitle").textContent = tr.testimonialsTitle;
+  $("testimonialsNote").textContent = tr.testimonialsNote;
+  $("faqTitle").textContent = tr.faqTitle;
+  $("heroBadge").textContent = tr.heroBadge;
+  $("productImageBadge").textContent = tr.productImageBadge;
+  $("disclaimerText").textContent = tr.disclaimer;
+  $("stickyTag").textContent = tr.stickyTag;
+  $("stickyCtaText").textContent = tr.stickyCtaText;
+  $("stickyName").textContent = state.productName;
+
+  privacyLink.textContent = tr.privacyText;
+  termsLink.textContent = tr.termsText;
+  contactLink.textContent = tr.contactText;
+  privacyLink.href = state.privacyUrl || DEFAULT.privacyUrl;
+  termsLink.href = state.termsUrl || DEFAULT.termsUrl;
+  contactLink.href = state.contactUrl || DEFAULT.contactUrl;
+
+  applyCtaColors();
+  updateHeroBackground();
+  renderProductImage();
+  renderTrustRow();
+  renderUrgency();
+
+  footerYear.textContent = new Date().getFullYear();
+  footerProduct.textContent = state.productName;
+
+  renderBenefits();
+  renderProsCons();
+  renderIngredients();
+  renderReviews();
+  renderFaq();
+
+  saveState(state);
+}
+
+/* ================= UI events ================= */
+productNameInput.addEventListener("input", e=>{ state.productName = e.target.value || DEFAULT.productName; renderAll(); });
+subtitleInput.addEventListener("input", e=>{ state.subtitle = e.target.value; renderAll(); });
+buyLinkInput.addEventListener("input", e=>{ state.buyLink = e.target.value; renderAll(); });
+backgroundTypeInput.addEventListener("change", e=>{ state.backgroundType = e.target.value; toggleBackgroundFields(); renderAll(); });
+bgDesktopInput.addEventListener("input", e=>{ state.bgDesktop = e.target.value; renderAll(); });
+bgMobileInput.addEventListener("input", e=>{ state.bgMobile = e.target.value; renderAll(); });
+youtubeVideoIdInput.addEventListener("input", e=>{ state.youtubeVideoId = e.target.value; renderAll(); });
+prosTextInput.addEventListener("input", e=>{ state.pros = e.target.value.split('\n').filter(l=>l.trim()!==''); renderProsCons(); saveState(state); });
+consTextInput.addEventListener("input", e=>{ state.cons = e.target.value.split('\n').filter(l=>l.trim()!==''); renderProsCons(); saveState(state); });
+faqTextInput.addEventListener("input", e=>{ state.faq = parseFaqText(e.target.value); renderFaq(); saveState(state); });
+privacyUrlInput.addEventListener("input", e=>{ state.privacyUrl = e.target.value; renderAll(); });
+termsUrlInput.addEventListener("input", e=>{ state.termsUrl = e.target.value; renderAll(); });
+contactUrlInput.addEventListener("input", e=>{ state.contactUrl = e.target.value; renderAll(); });
+productImageUrlInput.addEventListener("input", e=>{ state.productImageUrl = e.target.value; renderAll(); });
+languageInput.addEventListener("change", e=>{ state.language = e.target.value; renderAll(); });
+urgencyEnabledInput.addEventListener("change", e=>{ state.urgencyEnabled = e.target.checked; renderAll(); });
+urgencyTextInput.addEventListener("input", e=>{ state.urgencyText = e.target.value; renderUrgency(); saveState(state); });
+urgencyDeadlineInput.addEventListener("input", e=>{ state.urgencyDeadline = e.target.value; renderUrgency(); saveState(state); });
+
+addBenefitBtn.addEventListener("click", ()=>{
+  const v = newBenefitInput.value.trim(); if(!v) return;
+  state.benefits.push(v); newBenefitInput.value=""; renderAll(); showStatus("Benefício adicionado!");
+});
+addIngredientBtn.addEventListener("click", ()=>{
+  const v = newIngredientInput.value.trim(); if(!v) return;
+  state.ingredients.push(v); newIngredientInput.value=""; renderAll(); showStatus("Ingrediente adicionado!");
+});
+addReviewBtn.addEventListener("click", ()=>{
+  state.reviews.push({name:"New Reviewer", text:"Review text...", rating:5, date:new Date().toISOString().slice(0,10), avatar:""});
+  renderAll(); reviewsList.lastChild?.scrollIntoView({behavior:"smooth", block:"center"}); showStatus("Review adicionado!");
+});
+
+saveBtn.addEventListener("click", ()=>{ saveState(state); showStatus("Alterações salvas!"); });
+resetBtn.addEventListener("click", ()=>{
+  if(!confirm("Resetar tudo para os valores padrão?")) return;
+  state = {...DEFAULT};
+  saveState(state); populateEditorFromState(); renderAll();
+  showStatus("Configurações resetadas!");
+});
+
+btnColorInput.addEventListener('input', e=>{ state.btnColor = e.target.value; applyCtaColors(); saveState(state); });
+btnColorHoverInput.addEventListener('input', e=>{ state.btnColorHover = e.target.value; applyCtaColors(); saveState(state); });
+
+exportBtn.addEventListener("click", ()=>{
+  try{
+    const html = generateExportHtml(state);
+    const blob = new Blob([html], {type:"text/html;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `${(state.productName||'presell').toLowerCase().replace(/\s+/g,'_')}_presell.html`;
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    showStatus("HTML exportado com sucesso!");
+  } catch(error){ console.error(error); showStatus("Erro ao exportar HTML", false); }
+});
+
+/* ================= EXPORT GENERATOR (standalone page) ================= */
+function generateExportHtml(st){
+  const tr = TRANSLATIONS[st.language] || TRANSLATIONS.en;
+  const safe = s => escapeHtml(s||"");
+  const ctaLine2Final = tr.ctaLine2.replace('{P}', safe(st.productName).toUpperCase());
+
+  const benefitsHtml = (st.benefits||[]).map(b=>`<div class="card"><span class="ic">✦</span>${escapeHtml(b)}</div>`).join("\n");
+  const ingredientsHtml = (st.ingredients||[]).map(ing=>{
+    const title = escapeHtml((ing.split(':')[0]||ing).trim());
+    const desc = escapeHtml(ing.split(':').slice(1).join(':').trim());
+    return `<div class="card"><span class="ic">🌱</span><strong>${title}</strong><p>${desc}</p></div>`;
+  }).join("\n");
+  const reviewsHtml = (st.reviews||[]).map(r=>`
+    <article class="review-card">
+      <div class="meta">
+        <img src="${escapeAttr(r.avatar||'https://i.pravatar.cc/150?img=1')}" class="avatar" onerror="this.src='https://i.pravatar.cc/150?img=1'">
+        <div><div style="font-weight:700;font-size:14px">${escapeHtml(r.name)}</div><div class="verified">✔ ${tr.verified}</div></div>
+      </div>
+      <div style="margin-top:12px">${renderStars(r.rating)}<div class="quote">"${escapeHtml(r.text)}"</div></div>
+    </article>`).join("\n");
+  const prosHtml = (st.pros||[]).map(p=>`<li><span class="chip yes">✓</span><span>${escapeHtml(p)}</span></li>`).join("");
+  const consHtml = (st.cons||[]).map(c=>`<li><span class="chip no">✕</span><span>${escapeHtml(c)}</span></li>`).join("");
+  const faqHtml = (st.faq||[]).map(f=>`<details class="faq-item"><summary>${escapeHtml(f.q)}<span class="plus">+</span></summary><div class="a">${escapeHtml(f.a)}</div></details>`).join("\n");
+  const trustHtml = [['🔒',tr.trust1],['🚚',tr.trust2],['🛡️',tr.trust3],['🏅',tr.trust4]].map(([ic,l])=>`<span class="trust-item"><span class="ic">${ic}</span>${escapeHtml(l)}</span>`).join('');
+
+  let productImageHtml = '';
+  if(st.productImageUrl && st.productImageUrl.trim()!==''){
+    productImageHtml = `<section class="product-image-section"><div class="product-image-container"><span class="badge">${tr.productImageBadge}</span><img src="${escapeAttr(st.productImageUrl)}" alt="${safe(st.productName)}" class="product-image"></div></section>`;
+  }
+
+  const backgroundType = st.backgroundType || DEFAULT.backgroundType;
+  let heroMediaHtml = '', heroBgStyle = '';
+  if(backgroundType === 'video'){
+    const videoId = st.youtubeVideoId || DEFAULT.youtubeVideoId;
+    heroMediaHtml = `<div class="video-container"><iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=1&showinfo=0&rel=0&modestbranding=1&disablekb=1&playsinline=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe></div>`;
+  } else {
+    const desktopUrl = st.bgDesktop || DEFAULT.bgDesktop, mobileUrl = st.bgMobile || DEFAULT.bgMobile;
+    heroBgStyle = `<style>.hero{background-image:url('${desktopUrl}')}@media (max-width:768px){.hero{background-image:url('${mobileUrl}') !important}}</style>`;
+  }
+
+  const urgencyHtml = (st.urgencyEnabled !== false) ? `
+  <div class="urgency-bar" id="urgencyBar">
+    <span>${escapeHtml(st.urgencyText||DEFAULT.urgencyText)}</span>
+    ${st.urgencyDeadline ? `<span class="countdown" id="countdownEl"></span>` : ''}
+  </div>` : '';
+
+  const countdownScript = (st.urgencyEnabled !== false && st.urgencyDeadline) ? `
+  <script>
+    (function(){
+      var deadline = new Date(${JSON.stringify(st.urgencyDeadline)}).getTime();
+      var el = document.getElementById('countdownEl');
+      function pad(n){ return String(n).padStart(2,'0'); }
+      function tick(){
+        var diff = deadline - Date.now();
+        if(diff<=0){ el.textContent="00:00:00"; clearInterval(iv); return; }
+        var h=Math.floor(diff/3600000), m=Math.floor((diff%3600000)/60000), s=Math.floor((diff%60000)/1000);
+        el.textContent = pad(h)+":"+pad(m)+":"+pad(s);
+      }
+      tick(); var iv = setInterval(tick, 1000);
+    })();
+  <\/script>` : '';
+
+  return `<!doctype html>
+<html lang="${st.language}">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>${safe(st.productName)}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0E1420; --ink-soft:#46505F; --slate:#7C8798; --cloud:#F4F6FA; --paper:#FFFFFF; --edge:#E7EAF0;
+  --accent:${st.btnColor||'#ff6a3d'}; --accent-dark:${st.btnColorHover||'#ffb100'};
+  --success:#16A34A; --danger:#E11D48; --on-accent:#1A0F08;
+  --r-sm:10px; --r-md:16px; --r-lg:22px;
+  --sh-sm:0 1px 2px rgba(15,23,42,.06); --sh-md:0 10px 28px rgba(15,23,42,.08); --sh-lg:0 24px 56px rgba(15,23,42,.14);
+  --ease:cubic-bezier(.16,1,.3,1);
+  --font-display:'Sora',system-ui,sans-serif; --font-body:'Inter',system-ui,sans-serif; --font-mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box}
+body{font-family:var(--font-body);margin:0;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--font-display);letter-spacing:-0.01em;margin:0}
+.eyebrow{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:500;color:var(--accent);display:block;margin-bottom:8px}
+.urgency-bar{background:linear-gradient(90deg,var(--ink),#1c2433);color:#fff;text-align:center;padding:10px 14px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.urgency-bar .countdown{font-family:var(--font-mono);background:rgba(255,255,255,.12);padding:3px 9px;border-radius:99px;font-size:12.5px}
+header.preview-header{background:radial-gradient(120% 140% at 50% 0%, #16213A 0%, var(--ink) 60%);color:#fff;text-align:center;padding:38px 20px 30px}
+header.preview-header h1{font-size:30px;font-weight:800}
+header.preview-header p{margin:8px 0 0;font-size:14.5px;color:#B9C2D6;font-weight:500}
+.hero{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:88vh;text-align:center;padding:50px 18px;box-sizing:border-box;background-size:cover;background-position:center}
+.hero::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,14,24,.15) 0%,rgba(10,14,24,.55) 100%);z-index:0}
+.hero > *{position:relative;z-index:1}
+.hero-badge{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.94);color:var(--ink);padding:8px 16px;border-radius:99px;font-size:12px;font-weight:700;margin-bottom:18px;box-shadow:var(--sh-sm)}
+.video-container{width:100%;max-width:780px;aspect-ratio:16/9;margin-bottom:24px;border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--sh-lg)}
+.video-container iframe{width:100%;height:100%;border:none;display:block}
+.cta{background:linear-gradient(95deg,var(--accent),var(--accent-dark));color:var(--on-accent);font-weight:700;padding:19px 38px;border-radius:99px;text-decoration:none;display:inline-block;box-shadow:0 14px 30px rgba(0,0,0,.15);transition:transform .2s var(--ease);font-size:18px;text-align:center;line-height:1.35}
+.cta:hover{transform:translateY(-3px) scale(1.01)}
+.cta small{display:block;font-size:12.5px;font-weight:600;opacity:.85;margin-bottom:3px}
+.cta strong{display:block;font-size:20px;font-weight:800}
+.trust-row{display:flex;gap:22px;flex-wrap:wrap;justify-content:center;margin-top:24px}
+.trust-item{display:flex;align-items:center;gap:7px;color:#fff;font-size:12.5px;font-weight:600;opacity:.95}
+.content{max-width:1080px;margin:0 auto;padding:64px 20px}
+.content > section{margin-bottom:64px}
+.sec-head{text-align:center;max-width:640px;margin:0 auto 32px}
+.sec-head h2{font-size:26px;font-weight:800;line-height:1.25}
+.intro-text{max-width:720px;margin:0 auto;text-align:center;font-size:16.5px;line-height:1.75;color:var(--ink-soft)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+.card{background:var(--paper);padding:22px 20px;border-radius:var(--r-md);border:1px solid var(--edge);box-shadow:var(--sh-sm);transition:transform .2s var(--ease)}
+.card:hover{transform:translateY(-4px);box-shadow:var(--sh-md)}
+.card .ic{font-size:22px;display:block;margin-bottom:10px}
+.card strong{display:block;margin-bottom:4px;font-family:var(--font-display);font-size:15px}
+.card p{margin:0;font-size:13.5px;color:var(--ink-soft);line-height:1.55}
+.product-image-section{text-align:center}
+.product-image-container{position:relative;width:100%;max-width:520px;margin:0 auto}
+.product-image{width:100%;height:auto;border-radius:var(--r-lg);box-shadow:var(--sh-lg)}
+.product-image-container .badge{position:absolute;top:-12px;right:-12px;background:linear-gradient(135deg,var(--accent),var(--accent-dark));color:var(--on-accent);font-weight:700;font-size:12px;padding:9px 14px;border-radius:99px;box-shadow:var(--sh-md);transform:rotate(6deg)}
+.verdict-panel{background:var(--paper);border:1px solid var(--edge);border-radius:var(--r-lg);box-shadow:var(--sh-md);padding:36px 28px;position:relative}
+.verdict-grid{display:grid;grid-template-columns:1fr 1fr}
+.verdict-col{padding:8px 22px}
+.verdict-col + .verdict-col{border-left:1px solid var(--edge)}
+.verdict-col h3{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.verdict-col ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:9px}
+.verdict-col li{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--ink-soft);line-height:1.45}
+.chip{flex:none;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;margin-top:1px}
+.chip.yes{background:#E7F7EE;color:var(--success)}
+.chip.no{background:#FCE8EC;color:var(--danger)}
+.verdict-mid{position:absolute;left:50%;top:-18px;transform:translateX(-50%);background:var(--ink);color:#fff;font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;padding:7px 16px;border-radius:99px;box-shadow:var(--sh-md);white-space:nowrap}
+@media (max-width:680px){.verdict-grid{grid-template-columns:1fr;gap:22px}.verdict-col + .verdict-col{border-left:0;border-top:1px solid var(--edge);padding-top:18px}}
+.reviews-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px}
+.review-card{background:var(--paper);border-radius:var(--r-md);padding:22px;border:1px solid var(--edge);box-shadow:var(--sh-sm);transition:transform .2s var(--ease)}
+.review-card:hover{transform:translateY(-4px);box-shadow:var(--sh-md)}
+.review-card .meta{display:flex;gap:12px;align-items:center}
+.avatar{width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--cloud)}
+.verified{font-size:10.5px;color:var(--success);font-weight:700;display:flex;align-items:center;gap:3px;margin-top:2px}
+.review-card .quote{font-size:13.5px;color:var(--ink-soft);line-height:1.6;margin-top:14px}
+.faq-item{border:1px solid var(--edge);border-radius:var(--r-md);margin-bottom:10px;overflow:hidden;background:var(--paper)}
+.faq-item summary{list-style:none;cursor:pointer;padding:17px 20px;font-weight:600;font-size:14.5px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.faq-item summary::-webkit-details-marker{display:none}
+.faq-item summary .plus{font-size:18px;color:var(--accent);transition:transform .2s var(--ease);flex:none}
+.faq-item[open] summary .plus{transform:rotate(45deg)}
+.faq-item .a{padding:0 20px 18px;font-size:14px;color:var(--ink-soft);line-height:1.65}
+footer{background:var(--ink);color:#cdd4e3;padding:40px 24px 28px;text-align:center}
+footer .fname{color:#fff;font-weight:700;font-family:var(--font-display)}
+footer a{color:#cdd4e3;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.25)}
+footer a:hover{color:#fff}
+footer .legal{max-width:640px;margin:18px auto 0;font-size:11.5px;line-height:1.6;color:#7e8aa3}
+.sticky-cta{position:fixed;left:0;right:0;bottom:0;z-index:80;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-top:1px solid var(--edge);padding:10px 14px;display:flex;align-items:center;gap:10px;transform:translateY(120%);transition:transform .3s var(--ease);box-shadow:0 -10px 30px rgba(2,6,23,.08)}
+.sticky-cta.show{transform:translateY(0)}
+.sticky-cta .info{flex:1;min-width:0}
+.sticky-cta .info strong{display:block;font-size:13px;font-family:var(--font-display)}
+.sticky-cta .info span{font-size:11px;color:var(--slate)}
+.sticky-cta .cta{padding:11px 18px;font-size:13.5px;flex:none}
+.sticky-cta .cta strong{font-size:13.5px}
+.sticky-cta .cta small{display:none}
+@media (min-width:901px){.sticky-cta{display:none}}
+@media (max-width:768px){.cta{width:90%;padding:17px 22px;font-size:16px;margin:0 auto;display:block}header.preview-header h1{font-size:25px}.content{padding:48px 16px}.content > section{margin-bottom:48px}}
+</style>
+${heroBgStyle}
+</head>
+<body>
+${urgencyHtml}
+<header class="preview-header">
+  <h1>${safe(st.productName)} 💪</h1>
+  <p>${safe(st.subtitle||'')}</p>
+</header>
+<div class="hero" id="hero">
+  <span class="hero-badge">${tr.heroBadge}</span>
+  ${backgroundType==='video' ? heroMediaHtml : ''}
+  <a class="cta" href="${escapeAttr(st.buyLink||'#')}">
+    <small>${tr.ctaLine1}</small>
+    <strong>${ctaLine2Final}</strong>
+  </a>
+  <div class="trust-row">${trustHtml}</div>
+</div>
+<div class="content">
+  <section>
+    <div class="sec-head"><span class="eyebrow">${tr.section1Eyebrow}</span><h2>${tr.section1Title}</h2></div>
+    <p class="intro-text"><strong style="color:var(--accent)">${safe(st.productName)}</strong> ${tr.section1Text}</p>
+  </section>
+  <section>
+    <div class="sec-head"><h2>${tr.benefitsTitle}</h2></div>
+    <div class="cards">${benefitsHtml}</div>
+  </section>
+  ${productImageHtml}
+  <section>
+    <div class="sec-head"><h2>${tr.prosConsTitle}</h2></div>
+    <div class="verdict-panel">
+      <span class="verdict-mid">${tr.verdictMid}</span>
+      <div class="verdict-grid">
+        <div class="verdict-col"><h3 style="color:var(--success)">${tr.prosTitle}</h3><ul>${prosHtml}</ul></div>
+        <div class="verdict-col"><h3 style="color:var(--danger)">${tr.consTitle}</h3><ul>${consHtml}</ul></div>
+      </div>
+    </div>
+  </section>
+  <section>
+    <div class="sec-head"><h2>${tr.ingredientsTitle}</h2></div>
+    <div class="cards">${ingredientsHtml}</div>
+  </section>
+  <div style="text-align:center">
+    <a class="cta" href="${escapeAttr(st.buyLink||'#')}">
+      <small>${tr.ctaLine1}</small>
+      <strong>${ctaLine2Final}</strong>
+    </a>
+  </div>
+  <section>
+    <div class="sec-head"><h2>${tr.testimonialsTitle}</h2></div>
+    <div class="reviews-grid">${reviewsHtml}</div>
+    <p style="font-size:12px;color:var(--slate);margin-top:14px;text-align:center">${tr.testimonialsNote}</p>
+  </section>
+  <section>
+    <div class="sec-head"><h2>${tr.faqTitle}</h2></div>
+    ${faqHtml}
+  </section>
+</div>
+<footer>
+  <p>© ${new Date().getFullYear()} <span class="fname">${safe(st.productName)}</span></p>
+  <p>
+    <a href="${escapeAttr(st.privacyUrl||'privacy.html')}">${tr.privacyText}</a> ·
+    <a href="${escapeAttr(st.termsUrl||'terms.html')}">${tr.termsText}</a> ·
+    <a href="${escapeAttr(st.contactUrl||'contact.html')}">${tr.contactText}</a>
+  </p>
+  <p class="legal">${tr.disclaimer}</p>
+</footer>
+<div class="sticky-cta" id="stickyCta">
+  <div class="info"><strong>${safe(st.productName)}</strong><span>${tr.stickyTag}</span></div>
+  <a class="cta" href="${escapeAttr(st.buyLink||'#')}"><strong>${tr.stickyCtaText}</strong></a>
+</div>
+${countdownScript}
+<script>
+  (function(){
+    var hero = document.getElementById('hero');
+    var sticky = document.getElementById('stickyCta');
+    window.addEventListener('scroll', function(){
+      var b = hero.getBoundingClientRect().bottom;
+      if(b < 0) sticky.classList.add('show'); else sticky.classList.remove('show');
+    });
+  })();
+<\/script>
+</body>
+</html>`;
+}
+
+/* ================= init ================= */
+populateEditorFromState();
+applyCtaColors();
+renderAll();
+setupStickyScroll();
+
+const editor = $("editor");
+const toggle = $("toggleEditor");
+function checkSmall(){
+  if(window.innerWidth<=900){ toggle.style.display="inline-block"; editor.classList.remove('open'); }
+  else { toggle.style.display="none"; editor.classList.remove('open'); }
+}
+checkSmall();
+window.addEventListener("resize", checkSmall);
+toggle.addEventListener("click", ()=>{
+  editor.classList.toggle('open');
+  toggle.textContent = editor.classList.contains('open') ? 'Fechar' : 'Editor';
+});
+</script>
+</body>
+</html>

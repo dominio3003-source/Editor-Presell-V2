@@ -176,6 +176,14 @@
   }
   .urgency-bar .countdown{font-family:var(--font-mono);background:rgba(255,255,255,.12);padding:3px 9px;border-radius:99px;font-size:12.5px;letter-spacing:.03em}
 
+  .returning-bar{
+    background:linear-gradient(90deg,#0E5C3E,#137A50);color:#fff;text-align:center;
+    padding:11px 14px;font-size:13px;font-weight:600;display:none;
+    align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
+  }
+  .returning-bar.show{display:flex}
+  .returning-bar .pill{background:rgba(255,255,255,.16);padding:3px 10px;border-radius:99px;font-size:11.5px;font-weight:700}
+
   header.preview-header{
     background:radial-gradient(120% 140% at 50% 0%, #16213A 0%, var(--ink) 60%);
     color:#fff;text-align:center;padding:38px 20px 30px;position:relative;
@@ -355,10 +363,11 @@
   <aside class="editor" id="editor">
     <div class="editor-head">
       <div class="dot"></div>
-      <div>
+      <div style="flex:1">
         <h1>Presell Studio</h1>
         <span>BUILD · 2026 EDITION</span>
       </div>
+      <span id="trackingStatusPill" style="font-family:var(--font-mono);font-size:10px;letter-spacing:.05em;padding:5px 9px;border-radius:99px;background:#16203A;color:#9FE6BD;border:1px solid #1F3A2C;white-space:nowrap">🍪 TRACKING ON</span>
     </div>
 
     <div class="editor-scroll">
@@ -438,6 +447,31 @@
             <label>Contagem regressiva até (opcional)</label>
             <input type="datetime-local" id="urgencyDeadline">
             <div class="hint">Deixe vazio para exibir só o texto, sem cronômetro.</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="section" open>
+        <summary><span><span class="ic">🍪</span>Rastreamento &amp; Recuperação de Venda</span><span class="chev">▾</span></summary>
+        <div class="section-body">
+          <div class="switch-row">
+            <label>Salvar gclid/fbclid/UTM no retorno</label>
+            <span class="switch"><input type="checkbox" id="trackingEnabled" checked><span class="track" data-for="trackingEnabled"></span></span>
+          </div>
+          <div class="hint" style="margin:-4px 0 12px">Captura os parâmetros do anúncio (Google/Meta/TikTok Ads + UTM) na primeira visita e os anexa automaticamente ao link de compra — mesmo se o cliente sair e voltar dias depois, a venda continua atribuída à campanha certa.</div>
+          <div class="field">
+            <label>Duração do cookie (dias)</label>
+            <input type="text" id="cookieDays" value="30">
+          </div>
+          <div class="section-divider" style="background:var(--editor-edge)"></div>
+          <div class="switch-row">
+            <label>Mostrar aviso para quem já visitou</label>
+            <span class="switch"><input type="checkbox" id="returningBannerEnabled" checked><span class="track" data-for="returningBannerEnabled"></span></span>
+          </div>
+          <div class="field">
+            <label>Mensagem personalizada (opcional)</label>
+            <textarea id="returningTextOverride" rows="2" placeholder="Deixe vazio para usar o texto padrão do idioma selecionado"></textarea>
+            <div class="hint">Exibida numa faixa verde no topo quando o visitante volta sem ter comprado.</div>
           </div>
         </div>
       </details>
@@ -549,13 +583,18 @@ Is it safe to take daily? :: Yes, the formula is designed for daily use followin
       <span class="countdown" id="countdownEl" style="display:none"></span>
     </div>
 
+    <div class="returning-bar" id="returningBar">
+      <span class="pill" id="returningBadgeEl">👋 Welcome back!</span>
+      <span id="returningMessageEl">We kept your order ready — pick up right where you left off.</span>
+    </div>
+
     <header class="preview-header">
       <h1 id="previewTitle">Max Boost 💪</h1>
       <p id="previewSubtitle">Unlock Your Ultimate Vitality</p>
     </header>
 
     <div class="hero" id="hero">
-      <span class="hero-badge" id="heroBadge">⭐⭐⭐⭐ 4.9/5 · 2,000+ Verified Customers</span>
+      <span class="hero-badge" id="heroBadge">⭐ 4.9/5 · 2,000+ Verified Customers</span>
       <div class="video-container" id="videoContainer"></div>
       <a id="ctaBtn" class="cta" href="#buy">
         <small id="ctaLine1">I WANT MY</small>
@@ -778,7 +817,11 @@ const DEFAULT = {
   language: "en",
   urgencyEnabled: true,
   urgencyText: "⚡ Limited Time Offer — Stock Running Low",
-  urgencyDeadline: ""
+  urgencyDeadline: "",
+  trackingEnabled: true,
+  cookieDays: 30,
+  returningBannerEnabled: true,
+  returningTextOverride: ""
 };
 
 const TRANSLATIONS = {
@@ -798,7 +841,9 @@ const TRANSLATIONS = {
     trust1:"Secure Checkout", trust2:"Fast Shipping", trust3:"30-Day Guarantee", trust4:"Made in USA",
     stickyTag:"Limited time offer", stickyCtaText:"GET IT NOW",
     productImageBadge:"2026 FORMULA", verified:"Verified Buyer",
-    disclaimer:"These statements have not been evaluated by the Food and Drug Administration. This product is not intended to diagnose, treat, cure, or prevent any disease. Individual results may vary."
+    disclaimer:"These statements have not been evaluated by the Food and Drug Administration. This product is not intended to diagnose, treat, cure, or prevent any disease. Individual results may vary.",
+    returningBadge:"👋 Welcome back!",
+    returningMessage:"We kept your order ready — pick up right where you left off."
   },
   pt: {
     ctaLine1:"EU QUERO MEU", ctaLine2:"{P} AGORA",
@@ -816,7 +861,9 @@ const TRANSLATIONS = {
     trust1:"Compra Segura", trust2:"Envio Rápido", trust3:"Garantia de 30 Dias", trust4:"Feito nos EUA",
     stickyTag:"Oferta por tempo limitado", stickyCtaText:"QUERO AGORA",
     productImageBadge:"FÓRMULA 2026", verified:"Compra Verificada",
-    disclaimer:"Estas declarações não foram avaliadas pela ANVISA ou pela FDA. Este produto não tem a intenção de diagnosticar, tratar, curar ou prevenir qualquer doença. Resultados individuais podem variar."
+    disclaimer:"Estas declarações não foram avaliadas pela ANVISA ou pela FDA. Este produto não tem a intenção de diagnosticar, tratar, curar ou prevenir qualquer doença. Resultados individuais podem variar.",
+    returningBadge:"👋 Bem-vindo de volta!",
+    returningMessage:"Guardamos seu pedido — continue de onde parou."
   },
   es: {
     ctaLine1:"YO QUIERO MI", ctaLine2:"{P} AHORA",
@@ -834,7 +881,9 @@ const TRANSLATIONS = {
     trust1:"Pago Seguro", trust2:"Envío Rápido", trust3:"Garantía de 30 Días", trust4:"Hecho en EE. UU.",
     stickyTag:"Oferta por tiempo limitado", stickyCtaText:"QUIERO AHORA",
     productImageBadge:"FÓRMULA 2026", verified:"Compra Verificada",
-    disclaimer:"Estas declaraciones no han sido evaluadas por la FDA. Este producto no pretende diagnosticar, tratar, curar ni prevenir ninguna enfermedad. Los resultados individuales pueden variar."
+    disclaimer:"Estas declaraciones no han sido evaluadas por la FDA. Este producto no pretende diagnosticar, tratar, curar ni prevenir ninguna enfermedad. Los resultados individuales pueden variar.",
+    returningBadge:"👋 ¡Bienvenido de nuevo!",
+    returningMessage:"Guardamos tu pedido — continúa donde lo dejaste."
   },
   fr: {
     ctaLine1:"JE VEUX MON", ctaLine2:"{P} MAINTENANT",
@@ -852,7 +901,9 @@ const TRANSLATIONS = {
     trust1:"Paiement Sécurisé", trust2:"Livraison Rapide", trust3:"Garantie 30 Jours", trust4:"Fabriqué aux É.-U.",
     stickyTag:"Offre à durée limitée", stickyCtaText:"J'EN VEUX",
     productImageBadge:"FORMULE 2026", verified:"Achat Vérifié",
-    disclaimer:"Ces déclarations n'ont pas été évaluées par la FDA. Ce produit n'est pas destiné à diagnostiquer, traiter, guérir ou prévenir une maladie. Les résultats individuels peuvent varier."
+    disclaimer:"Ces déclarations n'ont pas été évaluées par la FDA. Ce produit n'est pas destiné à diagnostiquer, traiter, guérir ou prévenir une maladie. Les résultats individuels peuvent varier.",
+    returningBadge:"👋 Content de vous revoir !",
+    returningMessage:"Nous avons gardé votre commande — reprenez là où vous en étiez."
   }
 };
 
@@ -891,6 +942,9 @@ const languageInput=$("language");
 const urgencyEnabledInput=$("urgencyEnabled"), urgencyTextInput=$("urgencyText"), urgencyDeadlineInput=$("urgencyDeadline");
 const urgencyBar=$("urgencyBar"), urgencyTextEl=$("urgencyTextEl"), countdownEl=$("countdownEl");
 const stickyCta=$("stickyCta"), stickyCtaBtn=$("stickyCtaBtn");
+const trackingEnabledInput=$("trackingEnabled"), cookieDaysInput=$("cookieDays");
+const returningBannerEnabledInput=$("returningBannerEnabled"), returningTextOverrideInput=$("returningTextOverride");
+const returningBar=$("returningBar"), returningBadgeEl=$("returningBadgeEl"), returningMessageEl=$("returningMessageEl");
 
 function toggleBackgroundFields(){
   const bt = backgroundTypeInput.value;
@@ -937,6 +991,10 @@ function populateEditorFromState(){
   urgencyEnabledInput.checked = state.urgencyEnabled !== false;
   urgencyTextInput.value = state.urgencyText || DEFAULT.urgencyText;
   urgencyDeadlineInput.value = state.urgencyDeadline || "";
+  trackingEnabledInput.checked = state.trackingEnabled !== false;
+  cookieDaysInput.value = state.cookieDays || DEFAULT.cookieDays;
+  returningBannerEnabledInput.checked = state.returningBannerEnabled !== false;
+  returningTextOverrideInput.value = state.returningTextOverride || "";
   toggleBackgroundFields();
 }
 
@@ -1131,14 +1189,87 @@ function setupStickyScroll(){
   });
 }
 
+/* ================= ATTRIBUTION TRACKING (gclid/fbclid/UTM persistence) ================= */
+const TRACK_KEYS = ['gclid','fbclid','ttclid','msclkid','utm_source','utm_medium','utm_campaign','utm_term','utm_content'];
+const ATTR_COOKIE = 'px_attribution';
+const VISIT_COOKIE = 'px_visited';
+
+function setCookie(name, value, days){
+  try{
+    const d = new Date(); d.setTime(d.getTime() + days*24*60*60*1000);
+    document.cookie = `${name}=${encodeURIComponent(value)};expires=${d.toUTCString()};path=/;SameSite=Lax`;
+  }catch(e){}
+}
+function getCookie(name){
+  try{
+    const m = document.cookie.match(new RegExp('(?:^|; )'+name+'=([^;]*)'));
+    return m ? decodeURIComponent(m[1]) : null;
+  }catch(e){ return null; }
+}
+function readStored(name){
+  try{
+    const c = getCookie(name);
+    if(c) return c;
+    return localStorage.getItem(name);
+  }catch(e){ return null; }
+}
+function writeStored(name, value, days){
+  setCookie(name, value, days);
+  try{ localStorage.setItem(name, value); }catch(e){}
+}
+
+function captureAttribution(days){
+  let stored = {};
+  try{ stored = JSON.parse(readStored(ATTR_COOKIE) || '{}'); }catch(e){ stored = {}; }
+  const params = new URLSearchParams(window.location.search);
+  const fresh = {};
+  TRACK_KEYS.forEach(k=>{ if(params.has(k)) fresh[k] = params.get(k); });
+  const merged = {...stored, ...fresh};
+  if(Object.keys(fresh).length){
+    writeStored(ATTR_COOKIE, JSON.stringify(merged), days);
+  }
+  const isReturning = !!readStored(VISIT_COOKIE);
+  writeStored(VISIT_COOKIE, '1', days);
+  return { qs: new URLSearchParams(merged).toString(), isReturning };
+}
+
+function appendQuery(url, qs){
+  if(!qs || !url || url.trim()==='' || url.trim()==='#' || url.trim().startsWith('#')) return url;
+  return url + (url.includes('?') ? '&' : '?') + qs;
+}
+
+function applyTracking(){
+  const pill = document.getElementById('trackingStatusPill');
+  if(state.trackingEnabled === false){
+    returningBar.classList.remove('show');
+    if(pill){ pill.textContent = '🍪 TRACKING OFF'; pill.style.background='#241419'; pill.style.color='#FF8484'; pill.style.borderColor='#3A2330'; }
+    return state.buyLink;
+  }
+  if(pill){ pill.textContent = '🍪 TRACKING ON'; pill.style.background='#16203A'; pill.style.color='#9FE6BD'; pill.style.borderColor='#1F3A2C'; }
+  const days = Math.max(1, parseInt(state.cookieDays,10) || 30);
+  const { qs, isReturning } = captureAttribution(days);
+  const finalLink = appendQuery(state.buyLink, qs);
+
+  if(state.returningBannerEnabled !== false && isReturning){
+    const tr = t();
+    returningBadgeEl.textContent = tr.returningBadge;
+    returningMessageEl.textContent = state.returningTextOverride || tr.returningMessage;
+    returningBar.classList.add('show');
+  } else {
+    returningBar.classList.remove('show');
+  }
+  return finalLink;
+}
+
 function renderAll(){
   const tr = t();
   previewTitle.textContent = state.productName;
   previewSubtitle.textContent = state.subtitle;
   highlightName.textContent = state.productName;
-  ctaBtn.href = state.buyLink;
-  ctaBottom.href = state.buyLink;
-  stickyCtaBtn.href = state.buyLink;
+  const trackedLink = applyTracking();
+  ctaBtn.href = trackedLink;
+  ctaBottom.href = trackedLink;
+  stickyCtaBtn.href = trackedLink;
 
   $("ctaLine1").textContent = tr.ctaLine1;
   $("ctaLine2").textContent = formatCtaLine2(tr.ctaLine2);
@@ -1224,6 +1355,10 @@ languageInput.addEventListener("change", e=>{
 urgencyEnabledInput.addEventListener("change", e=>{ state.urgencyEnabled = e.target.checked; renderAll(); });
 urgencyTextInput.addEventListener("input", e=>{ state.urgencyText = e.target.value; renderUrgency(); saveState(state); });
 urgencyDeadlineInput.addEventListener("input", e=>{ state.urgencyDeadline = e.target.value; renderUrgency(); saveState(state); });
+trackingEnabledInput.addEventListener("change", e=>{ state.trackingEnabled = e.target.checked; renderAll(); });
+cookieDaysInput.addEventListener("input", e=>{ state.cookieDays = parseInt(e.target.value,10) || 30; renderAll(); });
+returningBannerEnabledInput.addEventListener("change", e=>{ state.returningBannerEnabled = e.target.checked; renderAll(); });
+returningTextOverrideInput.addEventListener("input", e=>{ state.returningTextOverride = e.target.value; renderAll(); });
 
 addBenefitBtn.addEventListener("click", ()=>{
   const v = newBenefitInput.value.trim(); if(!v) return;
@@ -1307,6 +1442,12 @@ function generateExportHtml(st){
     ${st.urgencyDeadline ? `<span class="countdown" id="countdownEl"></span>` : ''}
   </div>` : '';
 
+  const returningHtml = (st.trackingEnabled !== false && st.returningBannerEnabled !== false) ? `
+  <div class="returning-bar" id="returningBar">
+    <span class="pill" id="returningBadgeEl">${escapeHtml(tr.returningBadge)}</span>
+    <span id="returningMessageEl">${escapeHtml(st.returningTextOverride || tr.returningMessage)}</span>
+  </div>` : '';
+
   const countdownScript = (st.urgencyEnabled !== false && st.urgencyDeadline) ? `
   <script>
     (function(){
@@ -1323,6 +1464,55 @@ function generateExportHtml(st){
       tick(); var iv = setInterval(tick, 1000);
     })();
   <\/script>` : '';
+
+  const trackingScript = (st.trackingEnabled !== false) ? `
+  <script>
+    (function(){
+      var TRACK_KEYS = ['gclid','fbclid','ttclid','msclkid','utm_source','utm_medium','utm_campaign','utm_term','utm_content'];
+      var ATTR_COOKIE = 'px_attribution', VISIT_COOKIE = 'px_visited';
+      var DAYS = ${Math.max(1, parseInt(st.cookieDays,10) || 30)};
+      function setCookie(name,value,days){
+        try{
+          var d=new Date(); d.setTime(d.getTime()+days*24*60*60*1000);
+          document.cookie = name+"="+encodeURIComponent(value)+";expires="+d.toUTCString()+";path=/;SameSite=Lax";
+        }catch(e){}
+      }
+      function getCookie(name){
+        try{
+          var m = document.cookie.match(new RegExp('(?:^|; )'+name+'=([^;]*)'));
+          return m ? decodeURIComponent(m[1]) : null;
+        }catch(e){ return null; }
+      }
+      function readStored(name){
+        try{ var c = getCookie(name); if(c) return c; return localStorage.getItem(name); }catch(e){ return null; }
+      }
+      function writeStored(name,value,days){ setCookie(name,value,days); try{ localStorage.setItem(name,value); }catch(e){} }
+
+      var stored = {};
+      try{ stored = JSON.parse(readStored(ATTR_COOKIE) || '{}'); }catch(e){ stored = {}; }
+      var params = new URLSearchParams(window.location.search);
+      var fresh = {};
+      TRACK_KEYS.forEach(function(k){ if(params.has(k)) fresh[k] = params.get(k); });
+      var merged = Object.assign({}, stored, fresh);
+      if(Object.keys(fresh).length){ writeStored(ATTR_COOKIE, JSON.stringify(merged), DAYS); }
+      var isReturning = !!readStored(VISIT_COOKIE);
+      writeStored(VISIT_COOKIE, '1', DAYS);
+      var qs = new URLSearchParams(merged).toString();
+
+      function appendQuery(url, qs){
+        if(!qs || !url || url.trim()==='' || url.trim()==='#' || url.trim().indexOf('#')===0) return url;
+        return url + (url.indexOf('?') > -1 ? '&' : '?') + qs;
+      }
+      if(qs){
+        document.querySelectorAll('.js-buy-link').forEach(function(a){
+          a.href = appendQuery(a.getAttribute('href'), qs);
+        });
+      }
+      var bar = document.getElementById('returningBar');
+      if(bar && isReturning){ bar.classList.add('show'); }
+    })();
+  <\/script>` : '';
+
 
   return `<!doctype html>
 <html lang="${st.language}">
@@ -1347,6 +1537,9 @@ body{font-family:var(--font-body);margin:0;background:var(--paper);color:var(--i
 h1,h2,h3{font-family:var(--font-display);letter-spacing:-0.01em;margin:0}
 .eyebrow{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:500;color:var(--accent);display:block;margin-bottom:8px}
 .urgency-bar{background:linear-gradient(90deg,var(--ink),#1c2433);color:#fff;text-align:center;padding:10px 14px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.returning-bar{background:linear-gradient(90deg,#0E5C3E,#137A50);color:#fff;text-align:center;padding:11px 14px;font-size:13px;font-weight:600;display:none;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.returning-bar.show{display:flex}
+.returning-bar .pill{background:rgba(255,255,255,.16);padding:3px 10px;border-radius:99px;font-size:11.5px;font-weight:700}
 .urgency-bar .countdown{font-family:var(--font-mono);background:rgba(255,255,255,.12);padding:3px 9px;border-radius:99px;font-size:12.5px}
 header.preview-header{background:radial-gradient(120% 140% at 50% 0%, #16213A 0%, var(--ink) 60%);color:#fff;text-align:center;padding:38px 20px 30px}
 header.preview-header h1{font-size:clamp(22px,5vw,30px);font-weight:800}
@@ -1424,6 +1617,7 @@ ${heroBgStyle}
 </head>
 <body>
 ${urgencyHtml}
+${returningHtml}
 <header class="preview-header">
   <h1>${safe(st.productName)} 💪</h1>
   <p>${safe(st.subtitle||'')}</p>
@@ -1431,7 +1625,7 @@ ${urgencyHtml}
 <div class="hero" id="hero">
   <span class="hero-badge">${tr.heroBadge}</span>
   ${backgroundType==='video' ? heroMediaHtml : ''}
-  <a class="cta" href="${escapeAttr(st.buyLink||'#')}">
+  <a class="cta js-buy-link" href="${escapeAttr(st.buyLink||'#')}">
     <small>${tr.ctaLine1}</small>
     <strong>${ctaLine2Final}</strong>
   </a>
@@ -1462,7 +1656,7 @@ ${urgencyHtml}
     <div class="cards">${ingredientsHtml}</div>
   </section>
   <div style="text-align:center">
-    <a class="cta" href="${escapeAttr(st.buyLink||'#')}">
+    <a class="cta js-buy-link" href="${escapeAttr(st.buyLink||'#')}">
       <small>${tr.ctaLine1}</small>
       <strong>${ctaLine2Final}</strong>
     </a>
@@ -1488,9 +1682,10 @@ ${urgencyHtml}
 </footer>
 <div class="sticky-cta" id="stickyCta">
   <div class="info"><strong>${safe(st.productName)}</strong><span>${tr.stickyTag}</span></div>
-  <a class="cta" href="${escapeAttr(st.buyLink||'#')}"><strong>${tr.stickyCtaText}</strong></a>
+  <a class="cta js-buy-link" href="${escapeAttr(st.buyLink||'#')}"><strong>${tr.stickyCtaText}</strong></a>
 </div>
 ${countdownScript}
+${trackingScript}
 <script>
   (function(){
     var hero = document.getElementById('hero');
